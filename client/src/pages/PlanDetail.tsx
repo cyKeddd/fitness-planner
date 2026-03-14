@@ -246,9 +246,9 @@ function PlanDayCard({
   onDeleteExercise,
   startSessionPending,
 }: {
-  day: { id: number; dayNumber: number; name: string; description: string | null; exercises: Array<{ id: number; exerciseName: string; sets: number; reps: string; restSeconds: number; notes: string | null }> };
+  day: { id: number; planId?: number; dayNumber: number; name: string; description: string | null; exercises: Array<{ id: number; planDayId?: number; exerciseId?: number | null; exerciseName: string; sets: number; reps: string; restSeconds: number; notes: string | null; orderIndex?: number }> };
   exerciseList: Array<{ id: number; name: string }>;
-  onStart: (day: typeof day) => void;
+  onStart: (day: any) => void;
   onAddExercise: ReturnType<typeof trpc.plans.addExercise.useMutation>;
   onDeleteExercise: (ex: { id: number; name: string }) => void;
   startSessionPending: boolean;
