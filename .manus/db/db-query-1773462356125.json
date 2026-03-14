@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `personal_records` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`userId` int NOT NULL,\n\t`exerciseName` varchar(255) NOT NULL,\n\t`maxWeightKg` float NOT NULL,\n\t`repsAtMax` int,\n\t`achievedAt` timestamp NOT NULL DEFAULT (now()),\n\t`previousMaxKg` float,\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `personal_records_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Ptqv3FzprX1BGP.root --database MDwixM8ErVUc2oXEDED2pR --execute CREATE TABLE `personal_records` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`userId` int NOT NULL,\n\t`exerciseName` varchar(255) NOT NULL,\n\t`maxWeightKg` float NOT NULL,\n\t`repsAtMax` int,\n\t`achievedAt` timestamp NOT NULL DEFAULT (now()),\n\t`previousMaxKg` float,\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `personal_records_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1742
+}

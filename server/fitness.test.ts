@@ -337,6 +337,110 @@ describe("sessions", () => {
   });
 });
 
+describe("planDay", () => {
+  it("requires authentication for planDay.getExercises", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.planDay.getExercises({ planDayId: 1 })).rejects.toThrow();
+  });
+
+  it("returns exercises for a plan day", async () => {
+    const ctx = createAuthContext(1);
+    const caller = appRouter.createCaller(ctx);
+
+    // Create a plan with a day and exercises
+    const plan = await caller.plans.create({ name: "PlanDay Test", daysPerWeek: 3 });
+    const day = await caller.plans.addDay({ planId: plan!.id, dayNumber: 1, name: "Push Day" });
+    await caller.plans.addExercise({
+      planDayId: day!.id,
+      exerciseName: "Bench Press",
+      sets: 4,
+      reps: "8-10",
+      restSeconds: 90,
+      orderIndex: 0,
+    });
+    await caller.plans.addExercise({
+      planDayId: day!.id,
+      exerciseName: "Overhead Press",
+      sets: 3,
+      reps: "10-12",
+      restSeconds: 60,
+      orderIndex: 1,
+    });
+
+    // Fetch via planDay.getExercises
+    const exercises = await caller.planDay.getExercises({ planDayId: day!.id });
+    expect(exercises.length).toBe(2);
+    expect(exercises[0].exerciseName).toBe("Bench Press");
+    expect(exercises[0].sets).toBe(4);
+    expect(exercises[1].exerciseName).toBe("Overhead Press");
+
+    // Cleanup
+    await caller.plans.delete({ id: plan!.id });
+  });
+});
+
+describe("personal records", () => {
+  it("requires authentication for prs.getAll", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.prs.getAll()).rejects.toThrow();
+  });
+
+  it("returns empty array when no PRs exist", async () => {
+    const ctx = createAuthContext(999);
+    const caller = appRouter.createCaller(ctx);
+    const prs = await caller.prs.getAll();
+    expect(Array.isArray(prs)).toBe(true);
+  });
+
+  it("auto-creates PR when logging a set for a tracked exercise", async () => {
+    const ctx = createAuthContext(1);
+    const caller = appRouter.createCaller(ctx);
+
+    // Start a session and log a bench press set
+    const session = await caller.sessions.start({ name: "PR Test" });
+    const log = await caller.sessions.logSet({
+      sessionId: session!.id,
+      exerciseName: "Bench Press",
+      setNumber: 1,
+      reps: 5,
+      weightKg: 100,
+      completed: true,
+    });
+    expect(log).toHaveProperty("newPR");
+
+    // Check PR was created
+    const pr = await caller.prs.getForExercise({ exerciseName: "Bench Press" });
+    expect(pr).not.toBeNull();
+    expect(pr?.maxWeightKg).toBeGreaterThanOrEqual(100);
+
+    // Cleanup
+    await caller.sessions.abandon({ sessionId: session!.id });
+  });
+
+  it("does not create PR for non-tracked exercises", async () => {
+    const ctx = createAuthContext(1);
+    const caller = appRouter.createCaller(ctx);
+
+    const session = await caller.sessions.start({ name: "Non-PR Test" });
+    const log = await caller.sessions.logSet({
+      sessionId: session!.id,
+      exerciseName: "Bicep Curl",
+      setNumber: 1,
+      reps: 12,
+      weightKg: 15,
+      completed: true,
+    });
+    expect(log?.newPR).toBe(false);
+
+    const pr = await caller.prs.getForExercise({ exerciseName: "Bicep Curl" });
+    expect(pr).toBeNull();
+
+    await caller.sessions.abandon({ sessionId: session!.id });
+  });
+});
+
 describe("progress", () => {
   it("requires authentication for progress.stats", async () => {
     const ctx = createPublicContext();

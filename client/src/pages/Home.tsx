@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dumbbell, TrendingUp, Clock, Flame, Sparkles, Play, ChevronRight, Target } from "lucide-react";
+import { Dumbbell, TrendingUp, Clock, Flame, Sparkles, Play, ChevronRight, Target, Trophy } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 
@@ -14,6 +14,7 @@ export default function Home() {
   const stats = trpc.progress.stats.useQuery(undefined, { enabled: isAuthenticated });
   const activeSession = trpc.sessions.active.useQuery(undefined, { enabled: isAuthenticated });
   const plans = trpc.plans.list.useQuery(undefined, { enabled: isAuthenticated });
+  const prs = trpc.prs.getAll.useQuery(undefined, { enabled: isAuthenticated });
 
   // Redirect to onboarding if profile not completed
   useEffect(() => {
@@ -138,6 +139,36 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Personal Records */}
+      {prs.data && prs.data.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-yellow-400" />
+              Personal Records
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {prs.data.map((pr: any) => (
+                <div key={pr.id} className="p-3 rounded-lg bg-secondary/50 border border-border">
+                  <p className="font-semibold text-sm text-foreground">{pr.exerciseName}</p>
+                  <p className="text-2xl font-black text-primary mt-1">{pr.maxWeightKg} kg</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {pr.repsAtMax} rep{pr.repsAtMax !== 1 ? "s" : ""} &middot; {new Date(pr.achievedAt).toLocaleDateString()}
+                  </p>
+                  {pr.previousMaxKg && (
+                    <p className="text-xs text-emerald-400 mt-0.5">
+                      +{(pr.maxWeightKg - pr.previousMaxKg).toFixed(1)} kg from previous
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Workouts */}
       {stats.data?.recentSessions && stats.data.recentSessions.length > 0 && (

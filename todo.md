@@ -56,3 +56,12 @@
 - [x] Backend API tests (vitest) - 23 tests passing
 - [x] UI polish and error handling
 - [x] Loading states and empty states
+
+## Bug Fixes
+- [x] Starting a workout from a plan should auto-populate exercises with sets, reps, rest times pre-filled
+- [x] Users should only need to add custom exercises when doing a custom/quick workout
+
+## New Features
+- [x] Personal Records (PRs) tracking for 5 main compound lifts (Bench Press, Back Squat, Deadlift, Leg Press, Overhead Press)
+- [x] Auto-detect new PRs when logging sets
+- [x] Display PRs on dashboard and progress page

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Dumbbell, Flame, Target, Calendar, Search } from "lucide-react";
+import { TrendingUp, Dumbbell, Flame, Target, Calendar, Search, Trophy } from "lucide-react";
 import { useState, useMemo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -18,6 +18,7 @@ export default function Progress() {
   const sessions = trpc.sessions.list.useQuery({ limit: 50 }, { enabled: isAuthenticated });
   const [selectedExercise, setSelectedExercise] = useState("");
   const [exerciseSearch, setExerciseSearch] = useState("");
+  const prs = trpc.prs.getAll.useQuery(undefined, { enabled: isAuthenticated });
 
   const exerciseHistory = trpc.progress.exerciseHistory.useQuery(
     { exerciseName: selectedExercise, limit: 30 },
@@ -129,6 +130,50 @@ export default function Progress() {
           ) : (
             <div className="h-64 flex items-center justify-center text-muted-foreground">
               <p>Complete some workouts to see your activity chart.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Personal Records */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-400" /> Personal Records
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {prs.isLoading ? (
+            <Skeleton className="h-32" />
+          ) : prs.data && prs.data.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              {["Bench Press", "Back Squat", "Deadlift", "Leg Press", "Overhead Press"].map(name => {
+                const pr = prs.data.find((p: any) => p.exerciseName === name);
+                return (
+                  <div key={name} className={`p-4 rounded-lg border ${pr ? "bg-secondary/50 border-primary/20" : "bg-secondary/20 border-border"}`}>
+                    <p className="font-semibold text-sm text-foreground">{name}</p>
+                    {pr ? (
+                      <>
+                        <p className="text-3xl font-black text-primary mt-2">{pr.maxWeightKg}<span className="text-sm font-normal text-muted-foreground ml-1">kg</span></p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {pr.repsAtMax} rep{pr.repsAtMax !== 1 ? "s" : ""} &middot; {new Date(pr.achievedAt).toLocaleDateString()}
+                        </p>
+                        {pr.previousMaxKg && (
+                          <p className="text-xs text-emerald-400 mt-0.5">
+                            +{(pr.maxWeightKg - pr.previousMaxKg).toFixed(1)} kg improvement
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-2">No PR yet</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-32 flex items-center justify-center text-muted-foreground">
+              <p>Log sets for Bench Press, Back Squat, Deadlift, Leg Press, or Overhead Press to track PRs.</p>
             </div>
           )}
         </CardContent>

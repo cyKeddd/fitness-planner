@@ -147,3 +147,20 @@ export const sessionLogs = mysqlTable("session_logs", {
 
 export type SessionLog = typeof sessionLogs.$inferSelect;
 export type InsertSessionLog = typeof sessionLogs.$inferInsert;
+
+/**
+ * Personal records - tracks best lifts for key exercises
+ */
+export const personalRecords = mysqlTable("personal_records", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  exerciseName: varchar("exerciseName", { length: 255 }).notNull(),
+  maxWeightKg: float("maxWeightKg").notNull(),
+  repsAtMax: int("repsAtMax"),
+  achievedAt: timestamp("achievedAt").defaultNow().notNull(),
+  previousMaxKg: float("previousMaxKg"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PersonalRecord = typeof personalRecords.$inferSelect;
+export type InsertPersonalRecord = typeof personalRecords.$inferInsert;

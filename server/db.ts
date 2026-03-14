@@ -9,6 +9,7 @@ import {
   workoutPlanExercises, InsertWorkoutPlanExercise,
   workoutSessions, InsertWorkoutSession,
   sessionLogs, InsertSessionLog,
+  personalRecords, InsertPersonalRecord,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -359,4 +360,63 @@ export async function getWeeklyActivity(userId: number) {
     ORDER BY date ASC
   `);
   return ((rows as unknown as any[][])[0]) ?? [];
+}
+
+// ==================== PERSONAL RECORDS ====================
+
+const PR_EXERCISES = ["Bench Press", "Back Squat", "Deadlift", "Leg Press", "Overhead Press"];
+
+export async function getPersonalRecords(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(personalRecords)
+    .where(eq(personalRecords.userId, userId))
+    .orderBy(personalRecords.exerciseName);
+  return rows;
+}
+
+export async function getPersonalRecord(userId: number, exerciseName: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(personalRecords)
+    .where(and(eq(personalRecords.userId, userId), eq(personalRecords.exerciseName, exerciseName)))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function checkAndUpdatePR(userId: number, exerciseName: string, weightKg: number, reps: number): Promise<boolean> {
+  // Only track PRs for the 5 main lifts (case-insensitive match)
+  const matchedExercise = PR_EXERCISES.find(e => e.toLowerCase() === exerciseName.toLowerCase());
+  if (!matchedExercise) return false;
+
+  const db = await getDb();
+  if (!db) return false;
+
+  const existing = await db.select().from(personalRecords)
+    .where(and(eq(personalRecords.userId, userId), eq(personalRecords.exerciseName, matchedExercise)))
+    .limit(1);
+
+  if (existing.length > 0) {
+    const current = existing[0];
+    if (weightKg > current.maxWeightKg) {
+      await db.update(personalRecords)
+        .set({
+          previousMaxKg: current.maxWeightKg,
+          maxWeightKg: weightKg,
+          repsAtMax: reps,
+          achievedAt: new Date(),
+        })
+        .where(eq(personalRecords.id, current.id));
+      return true;
+    }
+    return false;
+  } else {
+    await db.insert(personalRecords).values({
+      userId,
+      exerciseName: matchedExercise,
+      maxWeightKg: weightKg,
+      repsAtMax: reps,
+    });
+    return true; // First time logging = new PR
+  }
 }

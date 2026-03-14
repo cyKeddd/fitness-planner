@@ -384,8 +384,16 @@ Return a JSON object with this exact structure:
         completed: z.boolean().optional(),
         notes: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
-        return db.addSessionLog(input);
+      .mutation(async ({ ctx, input }) => {
+        const log = await db.addSessionLog(input);
+        // Check for new PR
+        if (input.weightKg && input.weightKg > 0 && input.completed !== false) {
+          const newPr = await db.checkAndUpdatePR(ctx.user.id, input.exerciseName, input.weightKg, input.reps ?? 1);
+          if (newPr) {
+            return { ...log, newPR: true, prWeight: input.weightKg };
+          }
+        }
+        return { ...log, newPR: false };
       }),
 
     updateLog: protectedProcedure
@@ -433,6 +441,28 @@ Return a JSON object with this exact structure:
         const session = await db.getSession(input.sessionId);
         if (!session || session.userId !== ctx.user.id) throw new Error("Session not found");
         return db.updateSession(input.sessionId, { status: "abandoned" });
+      }),
+  }),
+
+  // ==================== PLAN DAY EXERCISES (for active workout) ====================
+  planDay: router({
+    getExercises: protectedProcedure
+      .input(z.object({ planDayId: z.number() }))
+      .query(async ({ input }) => {
+        return db.getPlanDayExercises(input.planDayId);
+      }),
+  }),
+
+  // ==================== PERSONAL RECORDS ====================
+  prs: router({
+    getAll: protectedProcedure.query(async ({ ctx }) => {
+      return db.getPersonalRecords(ctx.user.id);
+    }),
+
+    getForExercise: protectedProcedure
+      .input(z.object({ exerciseName: z.string() }))
+      .query(async ({ ctx, input }) => {
+        return db.getPersonalRecord(ctx.user.id, input.exerciseName);
       }),
   }),
 

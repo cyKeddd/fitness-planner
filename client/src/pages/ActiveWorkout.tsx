@@ -4,11 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import {
   Play, Pause, Square, Clock, Dumbbell, Plus, Check, X,
-  ChevronDown, ChevronUp, Timer, SkipForward, Trophy
+  ChevronDown, ChevronUp, Timer, SkipForward, Trophy, Zap
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
@@ -40,9 +39,7 @@ function RestTimer({
     }
     intervalRef.current = setInterval(() => {
       setRemaining(prev => {
-        if (prev <= 1) {
-          return 0;
-        }
+        if (prev <= 1) return 0;
         return prev - 1;
       });
     }, 1000);
@@ -62,29 +59,18 @@ function RestTimer({
           <Timer className="h-10 w-10 text-primary mx-auto" />
           <h2 className="text-xl font-bold text-foreground">Rest Time</h2>
         </div>
-
         <div className="relative">
           <div className="text-7xl font-black text-foreground tabular-nums tracking-tight">
             {minutes}:{seconds.toString().padStart(2, "0")}
           </div>
           <Progress value={progress} className="h-2 mt-4" />
         </div>
-
         <div className="flex gap-3 justify-center">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => setIsPaused(!isPaused)}
-            className="gap-2"
-          >
+          <Button variant="outline" size="lg" onClick={() => setIsPaused(!isPaused)} className="gap-2">
             {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
             {isPaused ? "Resume" : "Pause"}
           </Button>
-          <Button
-            size="lg"
-            onClick={onSkip}
-            className="gap-2"
-          >
+          <Button size="lg" onClick={onSkip} className="gap-2">
             <SkipForward className="h-5 w-5" /> Skip
           </Button>
         </div>
@@ -99,42 +85,27 @@ function SetRow({
   onLog,
   isPending,
   previousData,
+  targetReps,
 }: {
   setNumber: number;
   onLog: (reps: number, weight: number) => void;
   isPending: boolean;
   previousData?: { reps?: number | null; weightKg?: number | null };
+  targetReps?: string;
 }) {
-  const [reps, setReps] = useState(previousData?.reps?.toString() ?? "");
+  const defaultReps = previousData?.reps?.toString() ?? (targetReps ? targetReps.split("-")[0].replace(/\D/g, "") : "");
+  const [reps, setReps] = useState(defaultReps);
   const [weight, setWeight] = useState(previousData?.weightKg?.toString() ?? "");
 
   return (
     <div className="flex items-center gap-3 py-2">
       <span className="text-sm font-mono text-muted-foreground w-8 shrink-0">#{setNumber}</span>
       <div className="flex-1 flex items-center gap-2">
-        <Input
-          type="number"
-          placeholder="Reps"
-          value={reps}
-          onChange={e => setReps(e.target.value)}
-          className="w-20 h-9 text-center"
-        />
+        <Input type="number" placeholder="Reps" value={reps} onChange={e => setReps(e.target.value)} className="w-20 h-9 text-center" />
         <span className="text-muted-foreground text-xs">x</span>
-        <Input
-          type="number"
-          placeholder="kg"
-          value={weight}
-          onChange={e => setWeight(e.target.value)}
-          className="w-24 h-9 text-center"
-          step="0.5"
-        />
+        <Input type="number" placeholder="kg" value={weight} onChange={e => setWeight(e.target.value)} className="w-24 h-9 text-center" step="0.5" />
       </div>
-      <Button
-        size="sm"
-        onClick={() => onLog(Number(reps) || 0, Number(weight) || 0)}
-        disabled={isPending}
-        className="gap-1 h-9"
-      >
+      <Button size="sm" onClick={() => onLog(Number(reps) || 0, Number(weight) || 0)} disabled={isPending} className="gap-1 h-9">
         <Check className="h-4 w-4" /> Log
       </Button>
     </div>
@@ -162,8 +133,14 @@ function ExerciseBlock({
   loggedSets: Array<{ setNumber: number; reps?: number | null; weightKg?: number | null }>;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const utils = trpc.useUtils();
   const logSet = trpc.sessions.logSet.useMutation({
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      utils.sessions.get.invalidate();
+      if (data?.newPR) {
+        toast.success(`🏆 New Personal Record! ${exerciseName}: ${data.prWeight} kg`, { duration: 5000 });
+        utils.prs.getAll.invalidate();
+      }
       onSetLogged(restSeconds);
     },
   });
@@ -198,8 +175,6 @@ function ExerciseBlock({
       {expanded && (
         <CardContent className="pt-0">
           {notes && <p className="text-xs text-muted-foreground italic mb-3">{notes}</p>}
-
-          {/* Logged sets */}
           {loggedSets.map(log => (
             <div key={log.setNumber} className="flex items-center gap-3 py-2 opacity-70">
               <span className="text-sm font-mono text-muted-foreground w-8">#{log.setNumber}</span>
@@ -209,11 +184,10 @@ function ExerciseBlock({
               <Check className="h-4 w-4 text-primary" />
             </div>
           ))}
-
-          {/* Next set input */}
           {!allDone && (
             <SetRow
               setNumber={nextSetNumber}
+              targetReps={targetReps}
               onLog={(reps, weight) => {
                 logSet.mutate({
                   sessionId,
@@ -245,13 +219,19 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
   const utils = trpc.useUtils();
 
   const activeSession = trpc.sessions.active.useQuery(undefined, { enabled: isAuthenticated && !sessionId });
-  const sessionDetail = trpc.sessions.get.useQuery(
-    { id: sessionId ?? activeSession.data?.id ?? 0 },
-    { enabled: isAuthenticated && !!(sessionId ?? activeSession.data?.id), refetchInterval: 3000 }
-  );
-
   const currentSessionId = sessionId ?? activeSession.data?.id;
+
+  const sessionDetail = trpc.sessions.get.useQuery(
+    { id: currentSessionId ?? 0 },
+    { enabled: isAuthenticated && !!currentSessionId, refetchInterval: 5000 }
+  );
   const session = sessionDetail.data;
+
+  // Fetch plan day exercises when session has a planDayId
+  const planDayExercises = trpc.planDay.getExercises.useQuery(
+    { planDayId: session?.planDayId ?? 0 },
+    { enabled: isAuthenticated && !!session?.planDayId }
+  );
 
   const plans = trpc.plans.list.useQuery(undefined, { enabled: isAuthenticated });
 
@@ -290,10 +270,9 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
   }, [session?.status, session?.startedAt]);
 
   const handleSetLogged = useCallback((restSecs: number) => {
-    utils.sessions.get.invalidate();
     setRestDuration(restSecs);
     setShowRestTimer(true);
-  }, [utils]);
+  }, []);
 
   const formatTime = (secs: number) => {
     const h = Math.floor(secs / 3600);
@@ -312,6 +291,18 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
       return acc;
     }, {});
   }, [session?.logs]);
+
+  // Build the exercise list: plan exercises first, then any manually added
+  const planExercises = useMemo(() => {
+    if (!planDayExercises.data) return [];
+    return planDayExercises.data.map(ex => ({
+      name: ex.exerciseName,
+      sets: ex.sets,
+      reps: ex.reps,
+      rest: ex.restSeconds,
+      notes: ex.notes ?? undefined,
+    }));
+  }, [planDayExercises.data]);
 
   // No active session - show start options
   if (!currentSessionId || !session || session.status !== "active") {
@@ -354,7 +345,14 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
     );
   }
 
-  // Active session view
+  // Determine if this is a plan-based or quick workout
+  const isPlanWorkout = !!session.planDayId && planExercises.length > 0;
+
+  // Calculate overall progress for plan workouts
+  const totalPlanSets = planExercises.reduce((sum, ex) => sum + ex.sets, 0);
+  const totalLoggedSets = session.logs?.length ?? 0;
+  const overallProgress = totalPlanSets > 0 ? Math.min((totalLoggedSets / totalPlanSets) * 100, 100) : 0;
+
   return (
     <div className="space-y-4">
       {showRestTimer && (
@@ -374,7 +372,7 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
               <Clock className="h-3 w-3" /> {formatTime(elapsedSeconds)}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              {session.logs?.length ?? 0} sets logged
+              {totalLoggedSets} sets logged
             </span>
           </div>
         </div>
@@ -402,48 +400,68 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
         </div>
       </div>
 
-      {/* Quick Add Exercise */}
-      <QuickAddExercise sessionId={session.id} onSetLogged={handleSetLogged} logsByExercise={logsByExercise} />
+      {/* Overall Progress Bar for plan workouts */}
+      {isPlanWorkout && (
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Workout Progress</span>
+            <span>{Math.round(overallProgress)}%</span>
+          </div>
+          <Progress value={overallProgress} className="h-2" />
+        </div>
+      )}
 
-      {/* Exercise blocks from plan if any */}
-      {session.planDayId && <PlanDayExercises planDayId={session.planDayId} sessionId={session.id} onSetLogged={handleSetLogged} logsByExercise={logsByExercise} />}
+      {/* Plan Exercises (auto-populated) */}
+      {isPlanWorkout && (
+        <div className="space-y-4">
+          {planExercises.map((ex, idx) => (
+            <ExerciseBlock
+              key={`plan-${ex.name}-${idx}`}
+              exerciseName={ex.name}
+              targetSets={ex.sets}
+              targetReps={ex.reps}
+              restSeconds={ex.rest}
+              notes={ex.notes}
+              sessionId={session.id}
+              onSetLogged={handleSetLogged}
+              loggedSets={logsByExercise[ex.name] ?? []}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* For quick workouts OR extra exercises added manually */}
+      <ManualExerciseSection
+        sessionId={session.id}
+        onSetLogged={handleSetLogged}
+        logsByExercise={logsByExercise}
+        planExerciseNames={planExercises.map(e => e.name)}
+        isQuickWorkout={!isPlanWorkout}
+      />
     </div>
   );
 }
 
-// ==================== PLAN DAY EXERCISES ====================
-function PlanDayExercises({
-  planDayId,
+// ==================== MANUAL EXERCISE SECTION ====================
+function ManualExerciseSection({
   sessionId,
   onSetLogged,
   logsByExercise,
-}: {
-  planDayId: number;
-  sessionId: number;
-  onSetLogged: (restSecs: number) => void;
-  logsByExercise: Record<string, Array<{ setNumber: number; reps?: number | null; weightKg?: number | null }>>;
-}) {
-  // We don't have a direct planDayExercises query, so we'll rely on the logs
-  // The plan day exercises are shown from the session context
-  return null; // Plan exercises are handled via QuickAddExercise for now
-}
-
-// ==================== QUICK ADD EXERCISE ====================
-function QuickAddExercise({
-  sessionId,
-  onSetLogged,
-  logsByExercise,
+  planExerciseNames,
+  isQuickWorkout,
 }: {
   sessionId: number;
   onSetLogged: (restSecs: number) => void;
   logsByExercise: Record<string, Array<{ setNumber: number; reps?: number | null; weightKg?: number | null }>>;
+  planExerciseNames: string[];
+  isQuickWorkout: boolean;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [exerciseName, setExerciseName] = useState("");
   const [targetSets, setTargetSets] = useState("3");
   const [targetReps, setTargetReps] = useState("10");
   const [restSeconds, setRestSeconds] = useState("90");
-  const [exercises, setExercises] = useState<Array<{ name: string; sets: number; reps: string; rest: number; notes?: string }>>([]);
+  const [manualExercises, setManualExercises] = useState<Array<{ name: string; sets: number; reps: string; rest: number; notes?: string }>>([]);
 
   const { data: exerciseList } = trpc.exercises.list.useQuery({ limit: 100 });
 
@@ -452,7 +470,7 @@ function QuickAddExercise({
       toast.error("Enter an exercise name");
       return;
     }
-    setExercises(prev => [...prev, {
+    setManualExercises(prev => [...prev, {
       name: exerciseName.trim(),
       sets: Number(targetSets) || 3,
       reps: targetReps || "10",
@@ -462,18 +480,20 @@ function QuickAddExercise({
     setShowAdd(false);
   };
 
-  // Combine plan exercises and manually added ones
-  const allExercises = exercises;
+  // For quick workouts, also show exercises that were logged but not in manual list
+  const orphanExerciseNames = isQuickWorkout
+    ? Object.keys(logsByExercise).filter(name => !manualExercises.some(e => e.name === name))
+    : Object.keys(logsByExercise).filter(name => !planExerciseNames.includes(name) && !manualExercises.some(e => e.name === name));
 
   return (
     <div className="space-y-4">
-      {/* Logged exercises that aren't in the manual list */}
-      {Object.keys(logsByExercise).filter(name => !exercises.some(e => e.name === name)).map(name => (
+      {/* Orphan logged exercises (from previous session state) */}
+      {orphanExerciseNames.map(name => (
         <ExerciseBlock
-          key={name}
+          key={`orphan-${name}`}
           exerciseName={name}
           targetSets={99}
-          targetReps="—"
+          targetReps="--"
           restSeconds={90}
           sessionId={sessionId}
           onSetLogged={onSetLogged}
@@ -481,10 +501,10 @@ function QuickAddExercise({
         />
       ))}
 
-      {/* Manual exercises */}
-      {allExercises.map((ex, idx) => (
+      {/* Manually added exercises */}
+      {manualExercises.map((ex, idx) => (
         <ExerciseBlock
-          key={`${ex.name}-${idx}`}
+          key={`manual-${ex.name}-${idx}`}
           exerciseName={ex.name}
           targetSets={ex.sets}
           targetReps={ex.reps}
@@ -496,7 +516,7 @@ function QuickAddExercise({
         />
       ))}
 
-      {/* Add Exercise */}
+      {/* Add Exercise Button */}
       {showAdd ? (
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -536,7 +556,7 @@ function QuickAddExercise({
         </Card>
       ) : (
         <Button variant="outline" onClick={() => setShowAdd(true)} className="w-full gap-2 border-dashed">
-          <Plus className="h-4 w-4" /> Add Exercise
+          <Plus className="h-4 w-4" /> Add Custom Exercise
         </Button>
       )}
     </div>

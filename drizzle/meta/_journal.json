@@ -15,6 +15,13 @@
       "when": 1773460768955,
       "tag": "0001_perpetual_deathbird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773462346584,
+      "tag": "0002_lean_rattler",
+      "breakpoints": true
     }
   ]
 }
