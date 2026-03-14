@@ -1,10 +1,18 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useUnit } from "@/hooks/useUnit";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Play, Pause, Square, Clock, Dumbbell, Plus, Check, X,
   ChevronDown, ChevronUp, Timer, SkipForward, Trophy, Zap, Bookmark
@@ -79,23 +87,34 @@ function RestTimer({
   );
 }
 
-// ==================== EXERCISE SET ROW ====================
+// Helper: detect if target reps string indicates time-based exercise (e.g. "30s", "60s", "1min")
+function isTimeBasedReps(targetReps: string): boolean {
+  if (!targetReps) return false;
+  const t = targetReps.toLowerCase().trim();
+  return /\d+\s*s(econd)?s?$/i.test(t) || /\d+\s*min(ute)?s?$/i.test(t) || /^\d+s$/.test(t) || /^\d+min$/.test(t);
+}
+
+// ==================== EXERCISE SET ROW (reps x weight) ====================
 function SetRow({
   setNumber,
   onLog,
   isPending,
   previousData,
   targetReps,
+  weightUnit,
+  previousWeightDisplay,
 }: {
   setNumber: number;
-  onLog: (reps: number, weight: number) => void;
+  onLog: (reps: number, weightInUserUnit: number) => void;
   isPending: boolean;
   previousData?: { reps?: number | null; weightKg?: number | null };
   targetReps?: string;
+  weightUnit: "kg" | "lbs";
+  previousWeightDisplay: string;
 }) {
   const defaultReps = previousData?.reps?.toString() ?? (targetReps ? targetReps.split("-")[0].replace(/\D/g, "") : "");
   const [reps, setReps] = useState(defaultReps);
-  const [weight, setWeight] = useState(previousData?.weightKg?.toString() ?? "");
+  const [weight, setWeight] = useState(previousWeightDisplay);
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -103,9 +122,64 @@ function SetRow({
       <div className="flex-1 flex items-center gap-2">
         <Input type="number" placeholder="Reps" value={reps} onChange={e => setReps(e.target.value)} className="w-20 h-9 text-center" />
         <span className="text-muted-foreground text-xs">x</span>
-        <Input type="number" placeholder="kg" value={weight} onChange={e => setWeight(e.target.value)} className="w-24 h-9 text-center" step="0.5" />
+        <Input type="number" placeholder={weightUnit} value={weight} onChange={e => setWeight(e.target.value)} className="w-24 h-9 text-center" step="0.5" />
       </div>
       <Button size="sm" onClick={() => onLog(Number(reps) || 0, Number(weight) || 0)} disabled={isPending} className="gap-1 h-9">
+        <Check className="h-4 w-4" /> Log
+      </Button>
+    </div>
+  );
+}
+
+// ==================== TIME-BASED SET ROW ====================
+function TimeSetRow({
+  setNumber,
+  onLog,
+  isPending,
+  previousData,
+  targetReps,
+  weightUnit,
+  previousWeightDisplay,
+}: {
+  setNumber: number;
+  onLog: (durationSeconds: number, weightInUserUnit: number) => void;
+  isPending: boolean;
+  previousData?: { durationSeconds?: number | null; weightKg?: number | null };
+  targetReps?: string;
+  weightUnit: "kg" | "lbs";
+  previousWeightDisplay: string;
+}) {
+  const defaultDuration = previousData?.durationSeconds?.toString() ?? "";
+  const [duration, setDuration] = useState(defaultDuration);
+  const [weight, setWeight] = useState(previousWeightDisplay);
+
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <span className="text-sm font-mono text-muted-foreground w-8 shrink-0">#{setNumber}</span>
+      <div className="flex-1 flex items-center gap-2">
+        <Input
+          type="number"
+          placeholder="Sec"
+          value={duration}
+          onChange={e => setDuration(e.target.value)}
+          className="w-20 h-9 text-center"
+        />
+        <span className="text-muted-foreground text-xs">sec</span>
+        <Input
+          type="number"
+          placeholder={weightUnit}
+          value={weight}
+          onChange={e => setWeight(e.target.value)}
+          className="w-24 h-9 text-center"
+          step="0.5"
+        />
+      </div>
+      <Button
+        size="sm"
+        onClick={() => onLog(Number(duration) || 0, Number(weight) || 0)}
+        disabled={isPending}
+        className="gap-1 h-9"
+      >
         <Check className="h-4 w-4" /> Log
       </Button>
     </div>
@@ -122,6 +196,10 @@ function ExerciseBlock({
   sessionId,
   onSetLogged,
   loggedSets,
+  formatWeight,
+  inputToKg,
+  weightUnit,
+  kgToDisplay,
 }: {
   exerciseName: string;
   targetSets: number;
@@ -130,7 +208,11 @@ function ExerciseBlock({
   notes?: string;
   sessionId: number;
   onSetLogged: (restSecs: number) => void;
-  loggedSets: Array<{ setNumber: number; reps?: number | null; weightKg?: number | null }>;
+  loggedSets: Array<{ setNumber: number; reps?: number | null; weightKg?: number | null; durationSeconds?: number | null }>;
+  formatWeight: (kg: number | null | undefined) => string;
+  inputToKg: (value: number) => number;
+  weightUnit: "kg" | "lbs";
+  kgToDisplay: (kg: number) => number;
 }) {
   const [expanded, setExpanded] = useState(true);
   const utils = trpc.useUtils();
@@ -138,7 +220,7 @@ function ExerciseBlock({
     onSuccess: (data: any) => {
       utils.sessions.get.invalidate();
       if (data?.newPR) {
-        toast.success(`🏆 New Personal Record! ${exerciseName}: ${data.prWeight} kg`, { duration: 5000 });
+        toast.success(`🏆 New Personal Record! ${exerciseName}: ${formatWeight(data.prWeight)}`, { duration: 5000 });
         utils.prs.getAll.invalidate();
       }
       onSetLogged(restSeconds);
@@ -148,6 +230,7 @@ function ExerciseBlock({
   const completedSets = loggedSets.length;
   const nextSetNumber = completedSets + 1;
   const allDone = completedSets >= targetSets;
+  const timeBased = isTimeBasedReps(targetReps);
 
   return (
     <Card className={allDone ? "border-primary/30 bg-primary/5" : ""}>
@@ -160,7 +243,7 @@ function ExerciseBlock({
             <div className="min-w-0">
               <CardTitle className="text-base truncate">{exerciseName}</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {completedSets}/{targetSets} sets &middot; {targetReps} reps &middot; {restSeconds}s rest
+                {completedSets}/{targetSets} sets &middot; {timeBased ? targetReps : `${targetReps} reps`} &middot; {restSeconds}s rest
               </p>
             </div>
           </div>
@@ -179,29 +262,60 @@ function ExerciseBlock({
             <div key={log.setNumber} className="flex items-center gap-3 py-2 opacity-70">
               <span className="text-sm font-mono text-muted-foreground w-8">#{log.setNumber}</span>
               <div className="flex-1 text-sm text-foreground">
-                {log.reps ?? 0} reps x {log.weightKg ?? 0} kg
+                {log.durationSeconds != null
+                  ? `${log.durationSeconds} sec${log.weightKg ? ` x ${formatWeight(log.weightKg)}` : ""}`
+                  : `${log.reps ?? 0} reps x ${formatWeight(log.weightKg ?? null)}`}
               </div>
               <Check className="h-4 w-4 text-primary" />
             </div>
           ))}
-          {!allDone && (
-            <SetRow
+          {!allDone && (timeBased ? (
+            <TimeSetRow
               setNumber={nextSetNumber}
               targetReps={targetReps}
-              onLog={(reps, weight) => {
+              onLog={(durationSeconds, weightInUserUnit) => {
                 logSet.mutate({
                   sessionId,
                   exerciseName,
                   setNumber: nextSetNumber,
-                  reps,
-                  weightKg: weight,
+                  durationSeconds: durationSeconds || undefined,
+                  weightKg: weightInUserUnit > 0 ? inputToKg(weightInUserUnit) : undefined,
                   completed: true,
                 });
               }}
               isPending={logSet.isPending}
               previousData={loggedSets[loggedSets.length - 1]}
+              weightUnit={weightUnit}
+              previousWeightDisplay={
+                loggedSets[loggedSets.length - 1]?.weightKg != null
+                  ? String(kgToDisplay(loggedSets[loggedSets.length - 1]!.weightKg!))
+                  : ""
+              }
             />
-          )}
+          ) : (
+            <SetRow
+              setNumber={nextSetNumber}
+              targetReps={targetReps}
+              onLog={(reps, weightInUserUnit) => {
+                logSet.mutate({
+                  sessionId,
+                  exerciseName,
+                  setNumber: nextSetNumber,
+                  reps,
+                  weightKg: inputToKg(weightInUserUnit),
+                  completed: true,
+                });
+              }}
+              isPending={logSet.isPending}
+              previousData={loggedSets[loggedSets.length - 1]}
+              weightUnit={weightUnit}
+              previousWeightDisplay={
+                loggedSets[loggedSets.length - 1]?.weightKg != null
+                  ? String(kgToDisplay(loggedSets[loggedSets.length - 1]!.weightKg!))
+                  : ""
+              }
+            />
+          ))}
         </CardContent>
       )}
     </Card>
@@ -212,6 +326,7 @@ function ExerciseBlock({
 export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const { formatWeight, inputToKg, weightUnit, kgToDisplay } = useUnit();
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restDuration, setRestDuration] = useState(90);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -254,11 +369,41 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
     },
   });
 
+  const [showSaveTemplatePrompt, setShowSaveTemplatePrompt] = useState(false);
+  const [justCompletedSession, setJustCompletedSession] = useState<{ id: number; name: string } | null>(null);
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false);
+
   const completeSession = trpc.sessions.complete.useMutation({
-    onSuccess: () => {
+    onSuccess: (updatedSession) => {
       utils.sessions.active.invalidate();
+      utils.sessions.get.invalidate();
       toast.success("Workout completed! Great job!");
+      const hasLogs = (session?.logs?.length ?? 0) > 0;
+      if (updatedSession && hasLogs) {
+        setJustCompletedSession({ id: updatedSession.id, name: updatedSession.name });
+        setShowSaveTemplatePrompt(true);
+      } else {
+        setLocation("/");
+      }
+    },
+  });
+
+  const handleSkipSaveTemplate = () => {
+    setShowSaveTemplatePrompt(false);
+    setJustCompletedSession(null);
+    setLocation("/");
+  };
+
+  const saveTemplate = trpc.templates.createFromSession.useMutation({
+    onSuccess: () => {
+      toast.success("Template saved! You can start new workouts from it anytime.");
+      setShowSaveTemplatePrompt(false);
+      setJustCompletedSession(null);
+      utils.templates.list.invalidate();
       setLocation("/");
+    },
+    onError: (err) => {
+      toast.error("Failed to save template", { description: err.message });
     },
   });
 
@@ -297,9 +442,9 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
   // Group logs by exercise name
   const logsByExercise = useMemo(() => {
     if (!session?.logs) return {};
-    return session.logs.reduce<Record<string, Array<{ setNumber: number; reps?: number | null; weightKg?: number | null }>>>((acc, log) => {
+    return session.logs.reduce<Record<string, Array<{ setNumber: number; reps?: number | null; weightKg?: number | null; durationSeconds?: number | null }>>>((acc, log) => {
       if (!acc[log.exerciseName]) acc[log.exerciseName] = [];
-      acc[log.exerciseName].push({ setNumber: log.setNumber, reps: log.reps, weightKg: log.weightKg });
+      acc[log.exerciseName].push({ setNumber: log.setNumber, reps: log.reps, weightKg: log.weightKg, durationSeconds: log.durationSeconds });
       return acc;
     }, {});
   }, [session?.logs]);
@@ -332,6 +477,7 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
   // No active session - show start options
   if (!currentSessionId || !session || session.status !== "active") {
     return (
+      <>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Start a Workout</h1>
@@ -393,6 +539,43 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
           </div>
         )}
       </div>
+
+      <Dialog open={showSaveTemplatePrompt} onOpenChange={(open) => !open && handleSkipSaveTemplate()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save as Template?</DialogTitle>
+            <DialogDescription>
+              Save this workout as a reusable template? You can start new sessions from it anytime with all exercises pre-loaded.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleSkipSaveTemplate}>
+              Skip
+            </Button>
+            <Button
+              onClick={() => {
+                if (justCompletedSession) {
+                  saveTemplate.mutate({
+                    sessionId: justCompletedSession.id,
+                    name: justCompletedSession.name,
+                  });
+                }
+              }}
+              disabled={saveTemplate.isPending || !justCompletedSession}
+              className="gap-2"
+            >
+              {saveTemplate.isPending ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Bookmark className="h-4 w-4" /> Save as Template
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
     );
   }
 
@@ -431,11 +614,7 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              if (confirm("Abandon this workout?")) {
-                abandonSession.mutate({ sessionId: session.id });
-              }
-            }}
+            onClick={() => setShowAbandonConfirm(true)}
             className="gap-1 text-destructive hover:text-destructive"
           >
             <X className="h-4 w-4" /> Abandon
@@ -476,6 +655,10 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
               sessionId={session.id}
               onSetLogged={handleSetLogged}
               loggedSets={logsByExercise[ex.name] ?? []}
+              formatWeight={formatWeight}
+              inputToKg={inputToKg}
+              weightUnit={weightUnit}
+              kgToDisplay={kgToDisplay}
             />
           ))}
         </div>
@@ -488,7 +671,69 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
         logsByExercise={logsByExercise}
         planExerciseNames={planExercises.map(e => e.name)}
         isQuickWorkout={!isPlanWorkout}
+        formatWeight={formatWeight}
+        inputToKg={inputToKg}
+        weightUnit={weightUnit}
+        kgToDisplay={kgToDisplay}
       />
+
+      {/* Abandon confirmation */}
+      <AlertDialog open={showAbandonConfirm} onOpenChange={setShowAbandonConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Abandon this workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your progress will not be saved. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => abandonSession.mutate({ sessionId: session.id })}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Abandon
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Post-workout Save as Template prompt (also here in case refetch is delayed) */}
+      <Dialog open={showSaveTemplatePrompt} onOpenChange={(open) => !open && handleSkipSaveTemplate()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save as Template?</DialogTitle>
+            <DialogDescription>
+              Save this workout as a reusable template? You can start new sessions from it anytime with all exercises pre-loaded.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={handleSkipSaveTemplate}>
+              Skip
+            </Button>
+            <Button
+              onClick={() => {
+                if (justCompletedSession) {
+                  saveTemplate.mutate({
+                    sessionId: justCompletedSession.id,
+                    name: justCompletedSession.name,
+                  });
+                }
+              }}
+              disabled={saveTemplate.isPending || !justCompletedSession}
+              className="gap-2"
+            >
+              {saveTemplate.isPending ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Bookmark className="h-4 w-4" /> Save as Template
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -500,12 +745,20 @@ function ManualExerciseSection({
   logsByExercise,
   planExerciseNames,
   isQuickWorkout,
+  formatWeight,
+  inputToKg,
+  weightUnit,
+  kgToDisplay,
 }: {
   sessionId: number;
   onSetLogged: (restSecs: number) => void;
-  logsByExercise: Record<string, Array<{ setNumber: number; reps?: number | null; weightKg?: number | null }>>;
+  logsByExercise: Record<string, Array<{ setNumber: number; reps?: number | null; weightKg?: number | null; durationSeconds?: number | null }>>;
   planExerciseNames: string[];
   isQuickWorkout: boolean;
+  formatWeight: (kg: number | null | undefined) => string;
+  inputToKg: (value: number) => number;
+  weightUnit: "kg" | "lbs";
+  kgToDisplay: (kg: number) => number;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [exerciseName, setExerciseName] = useState("");
@@ -549,6 +802,10 @@ function ManualExerciseSection({
           sessionId={sessionId}
           onSetLogged={onSetLogged}
           loggedSets={logsByExercise[name] ?? []}
+          formatWeight={formatWeight}
+          inputToKg={inputToKg}
+          weightUnit={weightUnit}
+          kgToDisplay={kgToDisplay}
         />
       ))}
 
@@ -564,6 +821,10 @@ function ManualExerciseSection({
           sessionId={sessionId}
           onSetLogged={onSetLogged}
           loggedSets={logsByExercise[ex.name] ?? []}
+          formatWeight={formatWeight}
+          inputToKg={inputToKg}
+          weightUnit={weightUnit}
+          kgToDisplay={kgToDisplay}
         />
       ))}
 

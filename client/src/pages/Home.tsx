@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useUnit } from "@/hooks/useUnit";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { useEffect } from "react";
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const { formatWeight } = useUnit();
   const profile = trpc.profile.get.useQuery(undefined, { enabled: isAuthenticated });
   const stats = trpc.progress.stats.useQuery(undefined, { enabled: isAuthenticated });
   const activeSession = trpc.sessions.active.useQuery(undefined, { enabled: isAuthenticated });
@@ -18,7 +20,13 @@ export default function Home() {
 
   // Redirect to onboarding if profile not completed
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7782/ingest/ab464268-2ac5-4add-aaf6-705c2e3b12c1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'15fc60'},body:JSON.stringify({sessionId:'15fc60',location:'Home.tsx:useEffect',message:'Redirect check',data:{profileData:profile.data,onboardingCompleted:profile.data?.onboardingCompleted,profileDataUndefined:profile.data===undefined,willRedirect:profile.data!==undefined&&profile.data?.onboardingCompleted!==true&&!!isAuthenticated,isAuthenticated,isLoading:profile.isLoading,isFetching:profile.isFetching},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     if (profile.data !== undefined && profile.data?.onboardingCompleted !== true && isAuthenticated) {
+      // #region agent log
+      fetch('http://127.0.0.1:7782/ingest/ab464268-2ac5-4add-aaf6-705c2e3b12c1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'15fc60'},body:JSON.stringify({sessionId:'15fc60',location:'Home.tsx:redirecting',message:'Redirecting to onboarding',data:{onboardingCompleted:profile.data?.onboardingCompleted},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       setLocation("/onboarding");
     }
   }, [profile.data, isAuthenticated, setLocation]);
@@ -68,7 +76,7 @@ export default function Home() {
         <StatsCard
           icon={<Flame className="h-5 w-5 text-orange-400" />}
           label="Total Volume"
-          value={stats.data?.totalVolume ? `${Math.round(Number(stats.data.totalVolume)).toLocaleString()} kg` : "0 kg"}
+          value={stats.data?.totalVolume ? formatWeight(Number(stats.data.totalVolume)) : formatWeight(0)}
           loading={stats.isLoading}
         />
         <StatsCard
@@ -154,13 +162,13 @@ export default function Home() {
               {prs.data.map((pr: any) => (
                 <div key={pr.id} className="p-3 rounded-lg bg-secondary/50 border border-border">
                   <p className="font-semibold text-sm text-foreground">{pr.exerciseName}</p>
-                  <p className="text-2xl font-black text-primary mt-1">{pr.maxWeightKg} kg</p>
+                  <p className="text-2xl font-black text-primary mt-1">{formatWeight(pr.maxWeightKg)}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {pr.repsAtMax} rep{pr.repsAtMax !== 1 ? "s" : ""} &middot; {new Date(pr.achievedAt).toLocaleDateString()}
                   </p>
                   {pr.previousMaxKg && (
                     <p className="text-xs text-emerald-400 mt-0.5">
-                      +{(pr.maxWeightKg - pr.previousMaxKg).toFixed(1)} kg from previous
+                      +{formatWeight(pr.maxWeightKg - pr.previousMaxKg)} from previous
                     </p>
                   )}
                 </div>

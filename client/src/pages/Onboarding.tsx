@@ -49,6 +49,7 @@ export default function Onboarding() {
     gender: "",
     heightCm: "",
     weightKg: "",
+    preferredUnit: "kg" as "kg" | "lbs",
     fitnessLevel: "" as "" | "beginner" | "intermediate" | "advanced",
     bodyType: "",
     injuries: "",
@@ -56,8 +57,13 @@ export default function Onboarding() {
     equipment: [] as string[],
   });
 
+  const utils = trpc.useUtils();
   const upsertProfile = trpc.profile.upsert.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7782/ingest/ab464268-2ac5-4add-aaf6-705c2e3b12c1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'15fc60'},body:JSON.stringify({sessionId:'15fc60',location:'Onboarding.tsx:onSuccess',message:'Onboarding complete, navigating to /',data:{hasData:!!data,onboardingCompleted:data?.onboardingCompleted},timestamp:Date.now(),hypothesisId:'H5',runId:'post-fix'})}).catch(()=>{});
+      // #endregion
+      if (data) utils.profile.get.setData(undefined, data);
       toast.success("Profile saved! Let's build your fitness plan.");
       setLocation("/");
     },
@@ -101,6 +107,7 @@ export default function Onboarding() {
       gender: form.gender || undefined,
       heightCm: form.heightCm ? Number(form.heightCm) : undefined,
       weightKg: form.weightKg ? Number(form.weightKg) : undefined,
+      preferredUnit: form.preferredUnit,
       fitnessLevel: form.fitnessLevel || undefined,
       bodyType: form.bodyType || undefined,
       injuries: form.injuries || undefined,
@@ -155,6 +162,16 @@ export default function Onboarding() {
                     <Label>Weight (kg)</Label>
                     <Input type="number" placeholder="70" value={form.weightKg} onChange={e => setForm(p => ({ ...p, weightKg: e.target.value }))} />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Weight Unit (for workouts)</Label>
+                  <Select value={form.preferredUnit} onValueChange={(v: "kg" | "lbs") => setForm(p => ({ ...p, preferredUnit: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                      <SelectItem value="lbs">Pounds (lbs)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}

@@ -46,6 +46,7 @@ export default function Profile() {
     fitnessLevel: "" as "" | "beginner" | "intermediate" | "advanced",
     bodyType: "", injuries: "",
     goals: [] as string[], equipment: [] as string[],
+    preferredUnit: "kg" as "kg" | "lbs",
   });
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function Profile() {
         injuries: profile.injuries ?? "",
         goals: (profile.goals as string[]) ?? [],
         equipment: (profile.equipment as string[]) ?? [],
+        preferredUnit: (profile.preferredUnit as "kg" | "lbs") ?? "kg",
       });
     }
   }, [profile]);
@@ -80,6 +82,7 @@ export default function Profile() {
       injuries: form.injuries || undefined,
       goals: form.goals,
       equipment: form.equipment,
+      preferredUnit: form.preferredUnit,
       onboardingCompleted: true,
     });
   };
@@ -143,6 +146,16 @@ export default function Profile() {
               <Label>Weight (kg)</Label>
               <Input type="number" value={form.weightKg} onChange={e => setForm(p => ({ ...p, weightKg: e.target.value }))} />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Weight Unit (for workouts)</Label>
+            <Select value={form.preferredUnit} onValueChange={(v: "kg" | "lbs") => setForm(p => ({ ...p, preferredUnit: v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                <SelectItem value="lbs">Pounds (lbs)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

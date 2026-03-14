@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useUnit } from "@/hooks/useUnit";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 export default function SessionDetail({ id }: { id: number }) {
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const { formatWeight } = useUnit();
   const { data: session, isLoading } = trpc.sessions.get.useQuery({ id }, { enabled: isAuthenticated });
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -109,13 +111,15 @@ export default function SessionDetail({ id }: { id: number }) {
           <CardContent>
             <div className="space-y-1">
               <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground font-medium pb-2 border-b border-border">
-                <span>Set</span><span>Reps</span><span>Weight</span><span>Status</span>
+                <span>Set</span><span>Reps / Duration</span><span>Weight</span><span>Status</span>
               </div>
               {logs.map(log => (
                 <div key={log.id} className="grid grid-cols-4 gap-2 text-sm py-2">
                   <span className="text-foreground">{log.setNumber}</span>
-                  <span className="text-foreground">{log.reps ?? "—"}</span>
-                  <span className="text-foreground">{log.weightKg ? `${log.weightKg} kg` : "—"}</span>
+                  <span className="text-foreground">
+                    {log.durationSeconds != null ? `${log.durationSeconds} sec` : (log.reps ?? "—")}
+                  </span>
+                  <span className="text-foreground">{formatWeight(log.weightKg ?? null)}</span>
                   <span>{log.completed ? <Badge variant="secondary" className="text-xs">Done</Badge> : <Badge variant="outline" className="text-xs">Skipped</Badge>}</span>
                 </div>
               ))}

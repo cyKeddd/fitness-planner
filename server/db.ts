@@ -176,6 +176,13 @@ export async function getPlanDays(planId: number) {
   return db.select().from(workoutPlanDays).where(eq(workoutPlanDays.planId, planId)).orderBy(workoutPlanDays.dayNumber);
 }
 
+export async function getPlanDay(dayId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(workoutPlanDays).where(eq(workoutPlanDays.id, dayId)).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function createPlanDay(data: InsertWorkoutPlanDay) {
   const db = await getDb();
   if (!db) return null;

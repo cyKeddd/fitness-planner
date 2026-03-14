@@ -4,8 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Dumbbell, Plus, Sparkles, ChevronRight, Calendar, Trash2 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export default function Plans() {
@@ -13,10 +18,13 @@ export default function Plans() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const { data: plans, isLoading } = trpc.plans.list.useQuery(undefined, { enabled: isAuthenticated });
+  const [planToDelete, setPlanToDelete] = useState<{ id: number; name: string } | null>(null);
+
   const deletePlan = trpc.plans.delete.useMutation({
     onSuccess: () => {
       utils.plans.list.invalidate();
       toast.success("Plan deleted");
+      setPlanToDelete(null);
     },
   });
 
@@ -90,9 +98,7 @@ export default function Plans() {
                       className="h-8 w-8 text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm("Delete this plan?")) {
-                          deletePlan.mutate({ id: plan.id });
-                        }
+                        setPlanToDelete({ id: plan.id, name: plan.name });
                       }}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -104,7 +110,30 @@ export default function Plans() {
             </Card>
           ))}
         </div>
-      ) : (
+      ) : null}
+
+      <AlertDialog open={planToDelete !== null} onOpenChange={() => setPlanToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {planToDelete && `"${planToDelete.name}" will be permanently deleted. This action cannot be undone.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => planToDelete && deletePlan.mutate({ id: planToDelete.id })}
+              disabled={deletePlan.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {!isLoading && (!plans || plans.length === 0) ? (
         <div className="text-center py-16">
           <Dumbbell className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground mb-2">No workout plans yet</h3>
@@ -113,7 +142,7 @@ export default function Plans() {
             <Sparkles className="h-4 w-4" /> Generate with AI
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

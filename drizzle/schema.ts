@@ -33,6 +33,7 @@ export const userProfiles = mysqlTable("user_profiles", {
   injuries: text("injuries"),
   goals: json("goals"), // array of goal strings
   equipment: json("equipment"), // array of equipment strings
+  preferredUnit: mysqlEnum("preferredUnit", ["kg", "lbs"]).default("kg").notNull(),
   onboardingCompleted: boolean("onboardingCompleted").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

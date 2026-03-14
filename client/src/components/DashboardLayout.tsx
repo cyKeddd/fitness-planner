@@ -25,6 +25,7 @@ import { Dumbbell, LayoutDashboard, Library, LogOut, PanelLeft, Play, TrendingUp
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+import { FloatingAIChat } from "./FloatingAIChat";
 import { Button } from "./ui/button";
 
 const menuItems = [
@@ -262,6 +263,7 @@ function DashboardLayoutContent({
         )}
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
+      <FloatingAIChat />
     </>
   );
 }

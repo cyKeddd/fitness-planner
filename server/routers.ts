@@ -35,6 +35,7 @@ export const appRouter = router({
         injuries: z.string().optional(),
         goals: z.array(z.string()).optional(),
         equipment: z.array(z.string()).optional(),
+        preferredUnit: z.enum(["kg", "lbs"]).optional(),
         onboardingCompleted: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -154,7 +155,11 @@ export const appRouter = router({
         notes: z.string().optional(),
         orderIndex: z.number(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        const day = await db.getPlanDay(input.planDayId);
+        if (!day) throw new Error("Plan day not found");
+        const plan = await db.getPlan(day.planId);
+        if (!plan || plan.userId !== ctx.user.id) throw new Error("Plan not found");
         return db.addPlanExercise(input);
       }),
 
@@ -331,6 +336,54 @@ Return a JSON object with this exact structure:
         }
 
         return { planId: plan.id, name: plan.name };
+      }),
+
+    chat: protectedProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const profile = await db.getProfile(ctx.user.id);
+        const { exercises } = await db.listExercises({ limit: 50 });
+
+        const profileContext = profile ? `
+User Profile:
+- Age: ${profile.age ?? "Unknown"}
+- Gender: ${profile.gender ?? "Unknown"}
+- Fitness Level: ${profile.fitnessLevel ?? "Unknown"}
+- Goals: ${profile.goals ? (profile.goals as string[]).join(", ") : "Unknown"}
+- Equipment: ${profile.equipment ? (profile.equipment as string[]).join(", ") : "Unknown"}
+- Injuries/Limitations: ${profile.injuries ?? "None"}
+` : "No profile data.";
+
+        const exerciseNames = exercises.slice(0, 30).map(e => e.name).join(", ");
+
+        const systemPrompt = `You are a helpful fitness coach and personal trainer assistant. You help users with:
+- Exercise form and technique advice
+- Workout programming and plan suggestions
+- Warm-up and cool-down recommendations
+- Progress and recovery tips
+
+${profileContext}
+
+Available exercises in the app (sample): ${exerciseNames}
+
+Be concise, encouraging, and practical. Use markdown for formatting when helpful.`;
+
+        const messagesForLLM = [
+          { role: "system" as const, content: systemPrompt },
+          ...input.messages.map(m => ({ role: m.role, content: m.content })),
+        ];
+
+        const response = await invokeLLM({ messages: messagesForLLM });
+        const content = response.choices[0]?.message?.content;
+        if (!content || typeof content !== "string") {
+          throw new Error("Failed to get AI response");
+        }
+        return content;
       }),
   }),
 

@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useUnit } from "@/hooks/useUnit";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -125,6 +126,7 @@ function TemplateCard({
   isStarting: boolean;
 }) {
   const { isAuthenticated } = useAuth();
+  const { formatWeight } = useUnit();
   const { data: detail } = trpc.templates.get.useQuery(
     { id: template.id },
     { enabled: isAuthenticated }
@@ -161,7 +163,7 @@ function TemplateCard({
                   {ex.exerciseName}
                 </span>
                 <span className="text-muted-foreground text-xs">
-                  {ex.sets} × {ex.reps}{ex.weightKg ? ` @ ${ex.weightKg}kg` : ""}
+                  {ex.sets} × {ex.reps}{ex.weightKg != null ? ` @ ${formatWeight(ex.weightKg)}` : ""}
                 </span>
               </div>
             ))}

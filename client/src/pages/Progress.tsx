@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useUnit } from "@/hooks/useUnit";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import {
 
 export default function Progress() {
   const { isAuthenticated } = useAuth();
+  const { formatWeight, kgToDisplay, weightUnit } = useUnit();
   const stats = trpc.progress.stats.useQuery(undefined, { enabled: isAuthenticated });
   const weeklyActivity = trpc.progress.weeklyActivity.useQuery(undefined, { enabled: isAuthenticated });
   const sessions = trpc.sessions.list.useQuery({ limit: 50 }, { enabled: isAuthenticated });
@@ -52,15 +54,15 @@ export default function Progress() {
     }));
   }, [weeklyActivity.data]);
 
-  // Format exercise history for chart
+  // Format exercise history for chart (convert weight to user's preferred unit)
   const exerciseData = useMemo(() => {
     if (!exerciseHistory.data) return [];
     return [...exerciseHistory.data].reverse().map((d: any) => ({
       date: new Date(d.sessionDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      maxWeight: Number(d.maxWeight),
+      maxWeight: kgToDisplay(Number(d.maxWeight)),
       maxReps: Number(d.maxReps),
     }));
-  }, [exerciseHistory.data]);
+  }, [exerciseHistory.data, kgToDisplay]);
 
   const chartTooltipStyle = {
     contentStyle: {
@@ -90,7 +92,7 @@ export default function Progress() {
         <StatCard
           icon={<Flame className="h-5 w-5 text-orange-400" />}
           label="Total Volume"
-          value={stats.data?.totalVolume ? `${Math.round(Number(stats.data.totalVolume)).toLocaleString()} kg` : "0 kg"}
+          value={stats.data?.totalVolume ? formatWeight(Number(stats.data.totalVolume)) : formatWeight(0)}
           loading={stats.isLoading}
         />
         <StatCard
@@ -154,13 +156,13 @@ export default function Progress() {
                     <p className="font-semibold text-sm text-foreground">{name}</p>
                     {pr ? (
                       <>
-                        <p className="text-3xl font-black text-primary mt-2">{pr.maxWeightKg}<span className="text-sm font-normal text-muted-foreground ml-1">kg</span></p>
+                        <p className="text-3xl font-black text-primary mt-2">{formatWeight(pr.maxWeightKg)}</p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {pr.repsAtMax} rep{pr.repsAtMax !== 1 ? "s" : ""} &middot; {new Date(pr.achievedAt).toLocaleDateString()}
                         </p>
                         {pr.previousMaxKg && (
                           <p className="text-xs text-emerald-400 mt-0.5">
-                            +{(pr.maxWeightKg - pr.previousMaxKg).toFixed(1)} kg improvement
+                            +{formatWeight(pr.maxWeightKg - pr.previousMaxKg)} improvement
                           </p>
                         )}
                       </>
@@ -248,7 +250,7 @@ export default function Progress() {
                       stroke="oklch(0.75 0.18 145)"
                       fill="oklch(0.75 0.18 145 / 0.2)"
                       strokeWidth={2}
-                      name="Max Weight (kg)"
+                      name={`Max Weight (${weightUnit})`}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
