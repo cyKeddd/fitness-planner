@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `workout_template_exercises` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`templateId` int NOT NULL,\n\t`exerciseName` varchar(255) NOT NULL,\n\t`sets` int NOT NULL,\n\t`reps` varchar(64) NOT NULL,\n\t`weightKg` float,\n\t`restSeconds` int NOT NULL DEFAULT 60,\n\t`notes` text,\n\t`orderIndex` int NOT NULL,\n\tCONSTRAINT `workout_template_exercises_id` PRIMARY KEY(`id`)\n);\n\nCREATE TABLE `workout_templates` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`userId` int NOT NULL,\n\t`name` varchar(255) NOT NULL,\n\t`description` text,\n\t`sourceSessionId` int,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `workout_templates_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Ptqv3FzprX1BGP.root --database MDwixM8ErVUc2oXEDED2pR --execute CREATE TABLE `workout_template_exercises` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`templateId` int NOT NULL,\n\t`exerciseName` varchar(255) NOT NULL,\n\t`sets` int NOT NULL,\n\t`reps` varchar(64) NOT NULL,\n\t`weightKg` float,\n\t`restSeconds` int NOT NULL DEFAULT 60,\n\t`notes` text,\n\t`orderIndex` int NOT NULL,\n\tCONSTRAINT `workout_template_exercises_id` PRIMARY KEY(`id`)\n);\n\nCREATE TABLE `workout_templates` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`userId` int NOT NULL,\n\t`name` varchar(255) NOT NULL,\n\t`description` text,\n\t`sourceSessionId` int,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `workout_templates_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2566
+}

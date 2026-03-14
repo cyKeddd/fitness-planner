@@ -10,6 +10,8 @@ import {
   workoutSessions, InsertWorkoutSession,
   sessionLogs, InsertSessionLog,
   personalRecords, InsertPersonalRecord,
+  workoutTemplates, InsertWorkoutTemplate,
+  workoutTemplateExercises, InsertWorkoutTemplateExercise,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -382,6 +384,92 @@ export async function getPersonalRecord(userId: number, exerciseName: string) {
     .where(and(eq(personalRecords.userId, userId), eq(personalRecords.exerciseName, exerciseName)))
     .limit(1);
   return rows[0] ?? null;
+}
+
+// ==================== WORKOUT TEMPLATES ====================
+
+export async function getUserTemplates(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(workoutTemplates)
+    .where(eq(workoutTemplates.userId, userId))
+    .orderBy(desc(workoutTemplates.updatedAt));
+}
+
+export async function getTemplate(templateId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(workoutTemplates).where(eq(workoutTemplates.id, templateId)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getTemplateExercises(templateId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(workoutTemplateExercises)
+    .where(eq(workoutTemplateExercises.templateId, templateId))
+    .orderBy(workoutTemplateExercises.orderIndex);
+}
+
+export async function createTemplateFromSession(userId: number, sessionId: number, name: string, description?: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Get session logs
+  const logs = await getSessionLogs(sessionId);
+  if (logs.length === 0) return null;
+
+  // Create template
+  const result = await db.insert(workoutTemplates).values({
+    userId,
+    name,
+    description: description ?? null,
+    sourceSessionId: sessionId,
+  });
+  const templateId = result[0].insertId;
+
+  // Group logs by exercise name to determine sets/reps/weight
+  const exerciseMap = new Map<string, { sets: number; reps: number; weightKg: number | null; orderIndex: number }>();
+  let orderIndex = 0;
+  for (const log of logs) {
+    if (!exerciseMap.has(log.exerciseName)) {
+      exerciseMap.set(log.exerciseName, {
+        sets: 0,
+        reps: log.reps ?? 0,
+        weightKg: log.weightKg,
+        orderIndex: orderIndex++,
+      });
+    }
+    const entry = exerciseMap.get(log.exerciseName)!;
+    entry.sets += 1;
+    // Use the max weight and typical reps
+    if (log.weightKg && (entry.weightKg === null || log.weightKg > entry.weightKg)) {
+      entry.weightKg = log.weightKg;
+    }
+  }
+
+  // Insert template exercises
+  const templateExercises: InsertWorkoutTemplateExercise[] = Array.from(exerciseMap.entries()).map(([exerciseName, data]) => ({
+    templateId,
+    exerciseName,
+    sets: data.sets,
+    reps: String(data.reps),
+    weightKg: data.weightKg,
+    restSeconds: 60,
+    orderIndex: data.orderIndex,
+  }));
+  if (templateExercises.length > 0) {
+    await db.insert(workoutTemplateExercises).values(templateExercises);
+  }
+
+  return getTemplate(templateId);
+}
+
+export async function deleteTemplate(templateId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(workoutTemplateExercises).where(eq(workoutTemplateExercises.templateId, templateId));
+  await db.delete(workoutTemplates).where(eq(workoutTemplates.id, templateId));
 }
 
 export async function checkAndUpdatePR(userId: number, exerciseName: string, weightKg: number, reps: number): Promise<boolean> {

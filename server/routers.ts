@@ -466,6 +466,67 @@ Return a JSON object with this exact structure:
       }),
   }),
 
+  // ==================== WORKOUT TEMPLATES ====================
+  templates: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return db.getUserTemplates(ctx.user.id);
+    }),
+
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const template = await db.getTemplate(input.id);
+        if (!template || template.userId !== ctx.user.id) return null;
+        const exercises = await db.getTemplateExercises(template.id);
+        return { ...template, exercises };
+      }),
+
+    createFromSession: protectedProcedure
+      .input(z.object({
+        sessionId: z.number(),
+        name: z.string().min(1),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const session = await db.getSession(input.sessionId);
+        if (!session || session.userId !== ctx.user.id) throw new Error("Session not found");
+        if (session.status !== "completed") throw new Error("Can only create templates from completed sessions");
+        return db.createTemplateFromSession(ctx.user.id, input.sessionId, input.name, input.description);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const template = await db.getTemplate(input.id);
+        if (!template || template.userId !== ctx.user.id) throw new Error("Template not found");
+        await db.deleteTemplate(input.id);
+        return { success: true };
+      }),
+
+    startSession: protectedProcedure
+      .input(z.object({ templateId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const template = await db.getTemplate(input.templateId);
+        if (!template || template.userId !== ctx.user.id) throw new Error("Template not found");
+        const exercises = await db.getTemplateExercises(template.id);
+
+        // Abandon any existing active session
+        const active = await db.getActiveSession(ctx.user.id);
+        if (active) {
+          await db.updateSession(active.id, { status: "abandoned" });
+        }
+
+        // Create a new session from the template
+        const session = await db.createSession({
+          userId: ctx.user.id,
+          name: template.name,
+        });
+        if (!session) throw new Error("Failed to create session");
+
+        return { session, exercises };
+      }),
+  }),
+
   // ==================== PROGRESS / STATS ====================
   progress: router({
     stats: protectedProcedure.query(async ({ ctx }) => {

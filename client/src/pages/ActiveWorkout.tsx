@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Play, Pause, Square, Clock, Dumbbell, Plus, Check, X,
-  ChevronDown, ChevronUp, Timer, SkipForward, Trophy, Zap
+  ChevronDown, ChevronUp, Timer, SkipForward, Trophy, Zap, Bookmark
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
@@ -233,7 +233,19 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
     { enabled: isAuthenticated && !!session?.planDayId }
   );
 
+  // Template exercises stored in state (populated when starting from template)
+  const [templateExercises, setTemplateExercises] = useState<Array<{ exerciseName: string; sets: number; reps: string; weightKg: number | null; restSeconds: number; orderIndex: number }>>([]);
+
   const plans = trpc.plans.list.useQuery(undefined, { enabled: isAuthenticated });
+  const templates = trpc.templates.list.useQuery(undefined, { enabled: isAuthenticated });
+
+  const startFromTemplate = trpc.templates.startSession.useMutation({
+    onSuccess: (data) => {
+      utils.sessions.active.invalidate();
+      setTemplateExercises(data.exercises);
+      toast.success("Workout started from template!");
+    },
+  });
 
   const startSession = trpc.sessions.start.useMutation({
     onSuccess: () => {
@@ -292,17 +304,30 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
     }, {});
   }, [session?.logs]);
 
-  // Build the exercise list: plan exercises first, then any manually added
+  // Build the exercise list: plan exercises OR template exercises
   const planExercises = useMemo(() => {
-    if (!planDayExercises.data) return [];
-    return planDayExercises.data.map(ex => ({
-      name: ex.exerciseName,
-      sets: ex.sets,
-      reps: ex.reps,
-      rest: ex.restSeconds,
-      notes: ex.notes ?? undefined,
-    }));
-  }, [planDayExercises.data]);
+    // First check plan day exercises
+    if (planDayExercises.data && planDayExercises.data.length > 0) {
+      return planDayExercises.data.map(ex => ({
+        name: ex.exerciseName,
+        sets: ex.sets,
+        reps: ex.reps,
+        rest: ex.restSeconds,
+        notes: ex.notes ?? undefined,
+      }));
+    }
+    // Then check template exercises
+    if (templateExercises.length > 0) {
+      return templateExercises.map(ex => ({
+        name: ex.exerciseName,
+        sets: ex.sets,
+        reps: ex.reps,
+        rest: ex.restSeconds,
+        notes: undefined,
+      }));
+    }
+    return [];
+  }, [planDayExercises.data, templateExercises]);
 
   // No active session - show start options
   if (!currentSessionId || !session || session.status !== "active") {
@@ -322,9 +347,35 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
           <Play className="h-5 w-5" /> Start Quick Workout
         </Button>
 
+        {templates.data && templates.data.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold text-foreground">Start from a Template</h2>
+            <p className="text-xs text-muted-foreground">Saved workouts with exercises pre-loaded</p>
+            {templates.data.map(template => (
+              <Card
+                key={template.id}
+                className="hover:border-primary/30 transition-colors cursor-pointer"
+                onClick={() => startFromTemplate.mutate({ templateId: template.id })}
+              >
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Bookmark className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-medium text-foreground">{template.name}</p>
+                      {template.description && <p className="text-xs text-muted-foreground">{template.description}</p>}
+                    </div>
+                  </div>
+                  <Play className="h-4 w-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {plans.data && plans.data.length > 0 && (
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-foreground">Or start from a plan</h2>
+            <h2 className="text-lg font-semibold text-foreground">Start from a Plan</h2>
+            <p className="text-xs text-muted-foreground">Go to a plan to start a specific day</p>
             {plans.data.map(plan => (
               <Card key={plan.id} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => setLocation(`/plans/${plan.id}`)}>
                 <CardContent className="p-4 flex items-center justify-between">
@@ -345,8 +396,8 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
     );
   }
 
-  // Determine if this is a plan-based or quick workout
-  const isPlanWorkout = !!session.planDayId && planExercises.length > 0;
+  // Determine if this is a plan-based or template-based workout
+  const isPlanWorkout = planExercises.length > 0;
 
   // Calculate overall progress for plan workouts
   const totalPlanSets = planExercises.reduce((sum, ex) => sum + ex.sets, 0);

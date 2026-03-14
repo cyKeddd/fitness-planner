@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { Dumbbell, LayoutDashboard, Library, LogOut, PanelLeft, Play, TrendingUp, Sparkles, User } from "lucide-react";
+import { Dumbbell, LayoutDashboard, Library, LogOut, PanelLeft, Play, TrendingUp, Sparkles, User, Bookmark } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -33,6 +33,7 @@ const menuItems = [
   { icon: Sparkles, label: "AI Generate", path: "/generate" },
   { icon: Library, label: "Exercise Library", path: "/exercises" },
   { icon: Play, label: "Active Workout", path: "/workout" },
+  { icon: Bookmark, label: "Templates", path: "/templates" },
   { icon: TrendingUp, label: "Progress", path: "/progress" },
   { icon: User, label: "Profile", path: "/profile" },
 ];

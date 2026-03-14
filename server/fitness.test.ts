@@ -474,3 +474,130 @@ describe("progress", () => {
     expect(Array.isArray(history)).toBe(true);
   });
 });
+
+describe("templates", () => {
+  it("requires authentication for templates.list", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.templates.list()).rejects.toThrow();
+  });
+
+  it("returns empty array when no templates exist", async () => {
+    const ctx = createAuthContext(888);
+    const caller = appRouter.createCaller(ctx);
+    const templates = await caller.templates.list();
+    expect(Array.isArray(templates)).toBe(true);
+    expect(templates.length).toBe(0);
+  });
+
+  it("can create a template from a completed session", { timeout: 15000 }, async () => {
+    const ctx = createAuthContext(1);
+    const caller = appRouter.createCaller(ctx);
+
+    // Start and complete a session with some logged sets
+    const session = await caller.sessions.start({ name: "Template Source Workout" });
+    expect(session).not.toBeNull();
+
+    await caller.sessions.logSet({
+      sessionId: session!.id,
+      exerciseName: "Bench Press",
+      setNumber: 1,
+      reps: 10,
+      weightKg: 60,
+      completed: true,
+    });
+    await caller.sessions.logSet({
+      sessionId: session!.id,
+      exerciseName: "Overhead Press",
+      setNumber: 1,
+      reps: 12,
+      weightKg: 30,
+      completed: true,
+    });
+
+    // Complete the session
+    await caller.sessions.complete({ sessionId: session!.id });
+
+    // Create template from the completed session
+    const template = await caller.templates.createFromSession({
+      sessionId: session!.id,
+      name: "My Push Template",
+      description: "Bench and OHP combo",
+    });
+    expect(template).not.toBeNull();
+    expect(template?.name).toBe("My Push Template");
+
+    // Verify template appears in list
+    const templates = await caller.templates.list();
+    const found = templates.find(t => t.id === template?.id);
+    expect(found).toBeTruthy();
+
+    // Verify template detail has exercises
+    const detail = await caller.templates.get({ id: template!.id });
+    expect(detail).not.toBeNull();
+    expect(detail?.exercises.length).toBe(2);
+  });
+
+  it("cannot create template from an active session", async () => {
+    const ctx = createAuthContext(1);
+    const caller = appRouter.createCaller(ctx);
+
+    const session = await caller.sessions.start({ name: "Active Session" });
+    await caller.sessions.logSet({
+      sessionId: session!.id,
+      exerciseName: "Squat",
+      setNumber: 1,
+      reps: 5,
+      weightKg: 80,
+      completed: true,
+    });
+
+    // Try to create template from active session - should fail
+    await expect(
+      caller.templates.createFromSession({
+        sessionId: session!.id,
+        name: "Should Fail",
+      })
+    ).rejects.toThrow("Can only create templates from completed sessions");
+
+    // Cleanup
+    await caller.sessions.abandon({ sessionId: session!.id });
+  });
+
+  it("can start a session from a template", async () => {
+    const ctx = createAuthContext(1);
+    const caller = appRouter.createCaller(ctx);
+
+    // First, find an existing template (created in previous test)
+    const templates = await caller.templates.list();
+    const template = templates.find(t => t.name === "My Push Template");
+    expect(template).toBeTruthy();
+
+    // Start session from template
+    const result = await caller.templates.startSession({ templateId: template!.id });
+    expect(result).not.toBeNull();
+    expect(result.session).not.toBeNull();
+    expect(result.session.name).toBe("My Push Template");
+    expect(result.session.status).toBe("active");
+    expect(result.exercises.length).toBe(2);
+
+    // Cleanup
+    await caller.sessions.abandon({ sessionId: result.session.id });
+  });
+
+  it("can delete a template", async () => {
+    const ctx = createAuthContext(1);
+    const caller = appRouter.createCaller(ctx);
+
+    const templates = await caller.templates.list();
+    const template = templates.find(t => t.name === "My Push Template");
+    expect(template).toBeTruthy();
+
+    const deleteResult = await caller.templates.delete({ id: template!.id });
+    expect(deleteResult.success).toBe(true);
+
+    // Verify it's gone
+    const detail = await caller.templates.get({ id: template!.id });
+    expect(detail).toBeNull();
+  });
+});

@@ -164,3 +164,37 @@ export const personalRecords = mysqlTable("personal_records", {
 
 export type PersonalRecord = typeof personalRecords.$inferSelect;
 export type InsertPersonalRecord = typeof personalRecords.$inferInsert;
+
+/**
+ * Workout templates - saved from completed sessions for quick re-use
+ */
+export const workoutTemplates = mysqlTable("workout_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  sourceSessionId: int("sourceSessionId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorkoutTemplate = typeof workoutTemplates.$inferSelect;
+export type InsertWorkoutTemplate = typeof workoutTemplates.$inferInsert;
+
+/**
+ * Exercises within a workout template
+ */
+export const workoutTemplateExercises = mysqlTable("workout_template_exercises", {
+  id: int("id").autoincrement().primaryKey(),
+  templateId: int("templateId").notNull(),
+  exerciseName: varchar("exerciseName", { length: 255 }).notNull(),
+  sets: int("sets").notNull(),
+  reps: varchar("reps", { length: 64 }).notNull(),
+  weightKg: float("weightKg"),
+  restSeconds: int("restSeconds").default(60).notNull(),
+  notes: text("notes"),
+  orderIndex: int("orderIndex").notNull(),
+});
+
+export type WorkoutTemplateExercise = typeof workoutTemplateExercises.$inferSelect;
+export type InsertWorkoutTemplateExercise = typeof workoutTemplateExercises.$inferInsert;

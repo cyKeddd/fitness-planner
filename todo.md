@@ -65,3 +65,11 @@
 - [x] Personal Records (PRs) tracking for 5 main compound lifts (Bench Press, Back Squat, Deadlift, Leg Press, Overhead Press)
 - [x] Auto-detect new PRs when logging sets
 - [x] Display PRs on dashboard and progress page
+
+## Workout Templates
+- [x] Create workout_templates and workout_template_exercises database tables
+- [x] Backend API: create template from completed session, list templates, get template, delete template
+- [x] Save-as-template button on completed workout session detail page
+- [x] Templates listing page accessible from sidebar navigation
+- [x] Start a new workout session directly from a template with exercises pre-populated
+- [x] Write tests for template CRUD and session-from-template flow

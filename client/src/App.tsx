@@ -16,6 +16,7 @@ import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import Onboarding from "./pages/Onboarding";
 import SessionDetail from "./pages/SessionDetail";
+import Templates from "./pages/Templates";
 
 function Router() {
   return (
@@ -44,6 +45,9 @@ function Router() {
       </Route>
       <Route path="/workout/:id">
         {(params) => <DashboardLayout><ActiveWorkout sessionId={Number(params.id)} /></DashboardLayout>}
+      </Route>
+      <Route path="/templates">
+        <DashboardLayout><Templates /></DashboardLayout>
       </Route>
       <Route path="/progress">
         <DashboardLayout><Progress /></DashboardLayout>
