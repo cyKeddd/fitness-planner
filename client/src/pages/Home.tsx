@@ -1,31 +1,195 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { getLoginUrl } from "@/const";
-import { Streamdown } from 'streamdown';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dumbbell, TrendingUp, Clock, Flame, Sparkles, Play, ChevronRight, Target } from "lucide-react";
+import { useLocation } from "wouter";
+import { useEffect } from "react";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
+  const profile = trpc.profile.get.useQuery(undefined, { enabled: isAuthenticated });
+  const stats = trpc.progress.stats.useQuery(undefined, { enabled: isAuthenticated });
+  const activeSession = trpc.sessions.active.useQuery(undefined, { enabled: isAuthenticated });
+  const plans = trpc.plans.list.useQuery(undefined, { enabled: isAuthenticated });
 
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  // Redirect to onboarding if profile not completed
+  useEffect(() => {
+    if (profile.data !== undefined && profile.data?.onboardingCompleted !== true && isAuthenticated) {
+      setLocation("/onboarding");
+    }
+  }, [profile.data, isAuthenticated, setLocation]);
+
+  if (!isAuthenticated) return null;
+
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {greeting()}, {user?.name?.split(" ")[0] ?? "Athlete"}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Ready to crush your workout today?
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {activeSession.data ? (
+            <Button onClick={() => setLocation("/workout")} className="glow-primary gap-2">
+              <Play className="h-4 w-4" /> Resume Workout
+            </Button>
+          ) : (
+            <Button onClick={() => setLocation("/generate")} className="glow-primary gap-2">
+              <Sparkles className="h-4 w-4" /> Generate Plan
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard
+          icon={<Dumbbell className="h-5 w-5 text-primary" />}
+          label="Total Workouts"
+          value={stats.data?.totalSessions ?? 0}
+          loading={stats.isLoading}
+        />
+        <StatsCard
+          icon={<Flame className="h-5 w-5 text-orange-400" />}
+          label="Total Volume"
+          value={stats.data?.totalVolume ? `${Math.round(Number(stats.data.totalVolume)).toLocaleString()} kg` : "0 kg"}
+          loading={stats.isLoading}
+        />
+        <StatsCard
+          icon={<Target className="h-5 w-5 text-blue-400" />}
+          label="Total Reps"
+          value={stats.data?.totalReps ? Number(stats.data.totalReps).toLocaleString() : "0"}
+          loading={stats.isLoading}
+        />
+        <StatsCard
+          icon={<TrendingUp className="h-5 w-5 text-emerald-400" />}
+          label="Exercises Done"
+          value={stats.data?.uniqueExercises ?? 0}
+          loading={stats.isLoading}
+        />
+      </div>
+
+      {/* Active Session Banner */}
+      {activeSession.data && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Play className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">{activeSession.data.name}</p>
+                <p className="text-sm text-muted-foreground">Workout in progress</p>
+              </div>
+            </div>
+            <Button onClick={() => setLocation("/workout")} variant="outline" size="sm" className="gap-1">
+              Continue <ChevronRight className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => setLocation("/plans")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Dumbbell className="h-5 w-5 text-primary" />
+              My Workout Plans
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {plans.isLoading ? (
+              <Skeleton className="h-4 w-32" />
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                {plans.data?.length ? `${plans.data.length} plan${plans.data.length > 1 ? "s" : ""} saved` : "No plans yet. Create one to get started!"}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => setLocation("/exercises")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Exercise Library
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-sm">
+              Browse 90+ exercises with detailed instructions and filters.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Workouts */}
+      {stats.data?.recentSessions && stats.data.recentSessions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Clock className="h-5 w-5 text-muted-foreground" />
+              Recent Workouts
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {stats.data.recentSessions.map((session: any) => (
+              <div
+                key={session.id}
+                className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer"
+                onClick={() => setLocation(`/sessions/${session.id}`)}
+              >
+                <div>
+                  <p className="font-medium text-sm text-foreground">{session.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(session.startedAt).toLocaleDateString()} &middot;{" "}
+                    {session.durationSeconds ? `${Math.round(session.durationSeconds / 60)} min` : "N/A"}
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
+  );
+}
+
+function StatsCard({ icon, label, value, loading }: { icon: React.ReactNode; label: string; value: string | number; loading: boolean }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+            {icon}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground truncate">{label}</p>
+            {loading ? (
+              <Skeleton className="h-6 w-16 mt-1" />
+            ) : (
+              <p className="text-lg font-bold text-foreground truncate">{value}</p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
