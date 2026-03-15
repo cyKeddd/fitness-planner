@@ -73,3 +73,8 @@
 - [x] Templates listing page accessible from sidebar navigation
 - [x] Start a new workout session directly from a template with exercises pre-populated
 - [x] Write tests for template CRUD and session-from-template flow
+
+## Documentation
+- [x] Create skills.md - project-specific skills and conventions for agents
+- [x] Create agents.md - reference guide for any agent working on this project
+- [x] Create progress.md - comprehensive summary of all progress made in the codebase
