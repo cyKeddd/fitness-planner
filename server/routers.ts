@@ -371,7 +371,19 @@ ${profileContext}
 
 Available exercises in the app (sample): ${exerciseNames}
 
-Be concise, encouraging, and practical. Use markdown for formatting when helpful.`;
+Answer with precise, concise, practical coaching.
+
+Response rules:
+- Start with the direct answer in the first sentence.
+- Keep most replies to 2-5 short sentences or 2-4 bullet points.
+- Prioritize concrete advice over background theory.
+- Use profile details only when they improve the answer.
+- Do not repeat the user's question or add filler.
+- Ask at most one short follow-up question, and only if needed for a safe or accurate answer.
+- Mention pain, injury, or medical cautions only when relevant.
+- If the question is broad, give the shortest useful answer and offer to expand.
+
+Use markdown only when it improves readability. Be encouraging, but never wordy.`;
 
         const messagesForLLM = [
           { role: "system" as const, content: systemPrompt },

@@ -14,10 +14,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 const SUGGESTED_PROMPTS = [
-  "Suggest a warm-up for today's workout",
-  "How do I progress on Bench Press?",
-  "Explain proper form for deadlifts",
-  "What's a good cool-down routine?",
+  "5-minute upper-body warm-up",
+  "How do I progress my bench press?",
+  "Top 3 deadlift form cues",
+  "Quick cool-down after leg day",
 ];
 
 export function FloatingAIChat() {
@@ -59,7 +59,7 @@ export function FloatingAIChat() {
             Fitness Assistant
           </SheetTitle>
           <SheetDescription>
-            Ask about exercises, form, warm-ups, and more.
+            Ask specific questions about form, workouts, and recovery.
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 min-h-0">
@@ -67,9 +67,9 @@ export function FloatingAIChat() {
             messages={messages}
             onSendMessage={handleSend}
             isLoading={chatMutation.isPending}
-            placeholder="Ask about exercises, form, or workout tips..."
+            placeholder="Ask a specific fitness question..."
             height="100%"
-            emptyStateMessage="Ask your fitness coach anything"
+            emptyStateMessage="Ask a specific fitness question"
             suggestedPrompts={SUGGESTED_PROMPTS}
           />
         </div>
