@@ -15,7 +15,7 @@ This document provides a comprehensive summary of all development work completed
 | `5287ba0` | Mar 14, 2026 | Vraj Gupta (GitHub) | Onboarding fix, unit preferences, UI refinements |
 | `9cc49fe` | Mar 14, 2026 | Manus Agent | Sync GitHub changes, fix TS error, apply migration |
 | `7eb51b8` | Mar 14, 2026 | Vraj Gupta (GitHub) | README with live URL |
-| `local` | Mar 15, 2026 | Manus Agent | Curated local exercise image rollout with strict coverage validation |
+| `local` | Mar 15, 2026 | Manus Agent | ExerciseDB media integration (real exercise image/video in detail view) |
 
 ---
 
@@ -174,43 +174,28 @@ Vraj Gupta added a `README.md` to the GitHub repository with the live URL: `fram
 
 ---
 
-## Phase 8: Curated Exercise Images (`local`)
+## Phase 8: ExerciseDB Media Integration (`local`)
 
-This phase implemented a consistent curated image system for exercises and surfaced those images in the library, active workout, and session detail experiences.
-
-### Curated Image Catalog and Coverage Gates
-
-A new shared utility (`shared/exerciseImages.ts`) now centralizes:
-
-- workout type to curated local image mapping
-- exercise name normalization for lookup consistency
-- image payload enrichment (`imageUrl` + `imageUrls`)
-- strict coverage validation (`validateExerciseImageCoverage`)
-
-Coverage validation is enforced in both seed flow and server data flow so missing mappings fail fast instead of silently rendering inconsistent UI.
-
-### Local Asset Rollout
-
-Curated local SVG assets were added under `client/public/exercise-images/` for all supported workout types:
-`weights`, `plyometrics`, `cardio`, `hiit`, `yoga`, `stretching`, `calisthenics`, `bodyweight`, `crossfit`, `sport_specific`.
+This phase replaced local placeholder exercise visuals with real exercise media fetched from ExerciseDB and displayed in the exercise detail experience.
 
 ### Backend and API Updates
 
-- `seed-exercises.mjs` now validates coverage and seeds `imageUrl`.
-- `server/db.ts` enriches exercise responses with curated image fields and verifies coverage at runtime.
-- Exercise API consumers now receive deterministic image metadata for consistent rendering.
+- Added `server/exerciseMedia.ts` to fetch and cache ExerciseDB media by exercise name.
+- Added `exercises.mediaByName` endpoint in `server/routers.ts`.
+- Removed local SVG/image catalog plumbing from `server/db.ts` and seed coverage enforcement.
 
 ### Frontend Updates
 
-- `Exercises.tsx`: thumbnails with no-image fallback.
-- `ExerciseDetail.tsx`: primary image rendering plus gallery support via `imageUrls`.
-- `ActiveWorkout.tsx`: image resolution by normalized exercise name for plan/template/manual flows.
-- `SessionDetail.tsx`: grouped exercise cards now render curated thumbnails.
+- `ExerciseDetail.tsx` now loads ExerciseDB media via `trpc.exercises.mediaByName` and renders:
+  - real exercise image (when available),
+  - exercise video player (when available),
+  - graceful no-media fallback UI.
+- Removed local image rendering additions from `Exercises.tsx`, `ActiveWorkout.tsx`, and `SessionDetail.tsx`.
 
-### Test Additions
+### Testing and Cleanup
 
-- Added `server/exerciseImages.test.ts` (catalog behavior + validation coverage).
-- Expanded `server/fitness.test.ts` exercise assertions to include image metadata.
+- Removed temporary local image catalog test.
+- Reverted exercise-list test assertions that depended on synthetic `imageUrls`.
 
 ---
 
@@ -256,6 +241,6 @@ The application is fully functional with the following metrics:
 
 2. **No formal foreign key constraints** — The database uses integer columns for relationships but does not enforce FK constraints at the database level. Referential integrity is maintained at the application layer.
 
-3. **Image curation depth** — Images are currently mapped at workout-type level for full consistency coverage. Future refinement: per-exercise multi-image curation.
+3. **ExerciseDB dependency** — Exercise media now depends on external API availability and credentials. Add monitoring and fallback strategy for API failures/rate limits.
 
 4. **No workout calendar view** — Users cannot see their workout schedule on a calendar. This has been a recurring suggestion for future development.

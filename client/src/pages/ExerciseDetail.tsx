@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Dumbbell, Target, Zap, ImageOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Dumbbell, Target, Zap, ImageOff, VideoOff } from "lucide-react";
 import { useLocation } from "wouter";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -16,11 +15,10 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 export default function ExerciseDetail({ id }: { id: number }) {
   const [, setLocation] = useLocation();
   const { data: exercise, isLoading } = trpc.exercises.get.useQuery({ id });
-  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
-
-  useEffect(() => {
-    setSelectedImageIdx(0);
-  }, [id]);
+  const media = trpc.exercises.mediaByName.useQuery(
+    { name: exercise?.name ?? "" },
+    { enabled: !!exercise?.name }
+  );
 
   if (isLoading) {
     return (
@@ -41,9 +39,6 @@ export default function ExerciseDetail({ id }: { id: number }) {
       </div>
     );
   }
-
-  const gallery = Array.isArray(exercise.imageUrls) ? exercise.imageUrls : [];
-  const primaryImage = gallery[selectedImageIdx] ?? exercise.imageUrl ?? null;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -71,27 +66,34 @@ export default function ExerciseDetail({ id }: { id: number }) {
       <Card>
         <CardContent className="p-4 space-y-3">
           <div className="h-64 w-full rounded-lg overflow-hidden bg-secondary/50">
-            {primaryImage ? (
-              <img src={primaryImage} alt={`${exercise.name} guidance`} className="h-full w-full object-cover" />
+            {media.data?.imageUrl ? (
+              <img src={media.data.imageUrl} alt={`${exercise.name} demonstration`} className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-muted-foreground gap-2">
                 <ImageOff className="h-4 w-4" />
-                <span className="text-sm">No curated image</span>
+                <span className="text-sm">No image available</span>
               </div>
             )}
           </div>
-          {gallery.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto">
-              {gallery.map((url, idx) => (
-                <button
-                  type="button"
-                  key={url}
-                  onClick={() => setSelectedImageIdx(idx)}
-                  className={`h-16 w-24 rounded-md overflow-hidden border ${idx === selectedImageIdx ? "border-primary" : "border-border"}`}
-                >
-                  <img src={url} alt={`${exercise.name} ${idx + 1}`} className="h-full w-full object-cover" />
-                </button>
-              ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Exercise Video</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {media.data?.videoUrl ? (
+            <video
+              controls
+              preload="metadata"
+              className="w-full rounded-lg bg-black"
+              src={media.data.videoUrl}
+            />
+          ) : (
+            <div className="h-40 w-full rounded-lg bg-secondary/50 flex items-center justify-center text-muted-foreground gap-2">
+              <VideoOff className="h-4 w-4" />
+              <span className="text-sm">No video available</span>
             </div>
           )}
         </CardContent>

@@ -70,8 +70,6 @@ describe("exercises.list", () => {
     expect(result).toHaveProperty("total");
     expect(Array.isArray(result.exercises)).toBe(true);
     expect(result.total).toBeGreaterThan(0);
-    expect(Array.isArray(result.exercises[0]?.imageUrls)).toBe(true);
-    expect(result.exercises[0]?.imageUrls.length).toBeGreaterThan(0);
   });
 
   it("returns exercises filtered by workout type", async () => {
@@ -128,8 +126,6 @@ describe("exercises.get", () => {
     expect(exercise?.description).toBeTruthy();
     expect(exercise?.workoutType).toBeTruthy();
     expect(exercise?.difficulty).toBeTruthy();
-    expect(Array.isArray(exercise?.imageUrls)).toBe(true);
-    expect(exercise?.imageUrls.length).toBeGreaterThan(0);
   });
 
   it("returns null for non-existent exercise", async () => {

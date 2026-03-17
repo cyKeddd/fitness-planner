@@ -195,18 +195,16 @@ The codebase currently contains some debug `fetch` calls in `Home.tsx` (agent lo
 
 ---
 
-## Skill 9: Curated Exercise Image Consistency
+## Skill 9: ExerciseDB Media Integration
 
-Exercise guidance images are managed by the curated image catalog in `shared/exerciseImages.ts` and rendered in:
+Exercise guidance media is fetched from ExerciseDB in `server/exerciseMedia.ts` and exposed through `exercises.mediaByName`.
 
-- `Exercises.tsx`
-- `ExerciseDetail.tsx`
-- `ActiveWorkout.tsx`
-- `SessionDetail.tsx`
+When extending media support:
 
-When extending the exercise library:
-
-1. Ensure each exercise resolves to at least one curated local image via `workoutType` mapping.
-2. Keep assets lightweight and store them in `client/public/exercise-images/`.
-3. Use `withExerciseImages()` for API-facing exercise payloads so `imageUrl` and `imageUrls` are always consistent.
-4. Keep coverage validation enabled (`validateExerciseImageCoverage`) so missing mappings fail fast.
+1. Keep ExerciseDB fetch logic server-side only.
+2. Use `mediaByName` from the exercise detail page (`ExerciseDetail.tsx`) for image/video guidance.
+3. Handle missing media gracefully (show fallback UI, no broken embeds).
+4. Configure integration via environment variables:
+   - `EXERCISEDB_API_URL`
+   - `EXERCISEDB_API_HOST`
+   - `EXERCISEDB_API_KEY`

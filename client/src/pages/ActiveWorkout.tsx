@@ -20,7 +20,6 @@ import {
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { buildExerciseImageNameMap, normalizeExerciseName } from "@shared/exerciseImages";
 
 // ==================== REST TIMER ====================
 function RestTimer({
@@ -201,7 +200,6 @@ function ExerciseBlock({
   inputToKg,
   weightUnit,
   kgToDisplay,
-  imageUrl,
 }: {
   exerciseName: string;
   targetSets: number;
@@ -215,7 +213,6 @@ function ExerciseBlock({
   inputToKg: (value: number) => number;
   weightUnit: "kg" | "lbs";
   kgToDisplay: (kg: number) => number;
-  imageUrl?: string | null;
 }) {
   const [expanded, setExpanded] = useState(true);
   const utils = trpc.useUtils();
@@ -241,13 +238,7 @@ function ExerciseBlock({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${allDone ? "bg-primary/20" : "bg-secondary"}`}>
-              {imageUrl ? (
-                <img src={imageUrl} alt={`${exerciseName} demo`} className="h-8 w-8 rounded-lg object-cover" />
-              ) : allDone ? (
-                <Trophy className="h-4 w-4 text-primary" />
-              ) : (
-                <Dumbbell className="h-4 w-4 text-muted-foreground" />
-              )}
+              {allDone ? <Trophy className="h-4 w-4 text-primary" /> : <Dumbbell className="h-4 w-4 text-muted-foreground" />}
             </div>
             <div className="min-w-0">
               <CardTitle className="text-base truncate">{exerciseName}</CardTitle>
@@ -362,7 +353,6 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
 
   const plans = trpc.plans.list.useQuery(undefined, { enabled: isAuthenticated });
   const templates = trpc.templates.list.useQuery(undefined, { enabled: isAuthenticated });
-  const exerciseLibrary = trpc.exercises.list.useQuery({ limit: 100 }, { enabled: isAuthenticated });
 
   const startFromTemplate = trpc.templates.startSession.useMutation({
     onSuccess: (data) => {
@@ -483,11 +473,6 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
     }
     return [];
   }, [planDayExercises.data, templateExercises]);
-
-  const imageByExerciseName = useMemo(
-    () => buildExerciseImageNameMap(exerciseLibrary.data?.exercises ?? []),
-    [exerciseLibrary.data?.exercises]
-  );
 
   // No active session - show start options
   if (!currentSessionId || !session || session.status !== "active") {
@@ -674,7 +659,6 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
               inputToKg={inputToKg}
               weightUnit={weightUnit}
               kgToDisplay={kgToDisplay}
-              imageUrl={imageByExerciseName[normalizeExerciseName(ex.name)]?.imageUrl ?? null}
             />
           ))}
         </div>
@@ -691,7 +675,6 @@ export default function ActiveWorkout({ sessionId }: { sessionId?: number }) {
         inputToKg={inputToKg}
         weightUnit={weightUnit}
         kgToDisplay={kgToDisplay}
-        imageByExerciseName={imageByExerciseName}
       />
 
       {/* Abandon confirmation */}
@@ -766,7 +749,6 @@ function ManualExerciseSection({
   inputToKg,
   weightUnit,
   kgToDisplay,
-  imageByExerciseName,
 }: {
   sessionId: number;
   onSetLogged: (restSecs: number) => void;
@@ -777,7 +759,6 @@ function ManualExerciseSection({
   inputToKg: (value: number) => number;
   weightUnit: "kg" | "lbs";
   kgToDisplay: (kg: number) => number;
-  imageByExerciseName: Record<string, { imageUrl: string | null; imageUrls: string[] }>;
 }) {
   const [showAdd, setShowAdd] = useState(false);
   const [exerciseName, setExerciseName] = useState("");
@@ -825,7 +806,6 @@ function ManualExerciseSection({
           inputToKg={inputToKg}
           weightUnit={weightUnit}
           kgToDisplay={kgToDisplay}
-          imageUrl={imageByExerciseName[normalizeExerciseName(name)]?.imageUrl ?? null}
         />
       ))}
 
@@ -845,7 +825,6 @@ function ManualExerciseSection({
           inputToKg={inputToKg}
           weightUnit={weightUnit}
           kgToDisplay={kgToDisplay}
-          imageUrl={imageByExerciseName[normalizeExerciseName(ex.name)]?.imageUrl ?? null}
         />
       ))}
 

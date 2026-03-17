@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import * as db from "./db";
+import { fetchExerciseMediaByName } from "./exerciseMedia";
 
 export const appRouter = router({
   system: systemRouter,
@@ -63,6 +64,12 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return db.getExercise(input.id);
+      }),
+
+    mediaByName: publicProcedure
+      .input(z.object({ name: z.string().min(1) }))
+      .query(async ({ input }) => {
+        return fetchExerciseMediaByName(input.name);
       }),
   }),
 

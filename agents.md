@@ -66,7 +66,7 @@ fitness-planner/
 └── todo.md                    # Feature tracking
 ```
 
-Image guidance assets are stored in `client/public/exercise-images/`, and catalog/coverage logic is centralized in `shared/exerciseImages.ts`.
+Exercise media (image/video) is fetched from ExerciseDB via `server/exerciseMedia.ts` and shown in the exercise detail page.
 
 ---
 
@@ -76,7 +76,7 @@ These rules must be followed by any agent working on this project. Violating the
 
 **1. Never edit files in `server/_core/`.** This directory contains framework-level plumbing (OAuth, context, Vite bridge). Modifications here will break the infrastructure.
 
-**2. Keep exercise guide images lightweight and curated.** Use only small curated SVG files in `client/public/exercise-images/` for exercise guidance. Do not add large binaries or uncurated assets.
+**2. Exercise media is external.** Do not add local placeholder SVG packs for exercise guidance. Use ExerciseDB-backed media via server utilities.
 
 **3. Always store weights in kilograms in the database.** The `useUnit()` hook handles display conversion to lbs on the frontend. Never store lbs values in the database.
 
@@ -166,7 +166,7 @@ These are mistakes that have been encountered during development. Avoid repeatin
 | Infinite loading from unstable query references | Stabilize objects/arrays with `useState` or `useMemo` |
 | Debug fetch calls left in production code | Remove `// #region agent log` blocks before deploying |
 | Plan-based workouts not auto-populating | Ensure `planDay.getExercises` endpoint is called and exercises are mapped to local state |
-| Exercise image missing in UI | Confirm the exercise `workoutType` exists in `shared/exerciseImages.ts` so coverage validation and image mapping succeed |
+| Exercise image/video missing in detail view | Verify `exercises.mediaByName` is returning data and ExerciseDB env vars (`EXERCISEDB_API_KEY`, host/url) are configured |
 
 ---
 

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Dumbbell, Filter, ImageOff } from "lucide-react";
+import { Search, Dumbbell, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 
@@ -114,21 +114,6 @@ export default function Exercises() {
               onClick={() => setLocation(`/exercises/${exercise.id}`)}
             >
               <CardContent className="p-4 space-y-3">
-                <div className="h-36 w-full rounded-lg overflow-hidden bg-secondary/50">
-                  {exercise.imageUrl ? (
-                    <img
-                      src={exercise.imageUrl}
-                      alt={`${exercise.name} demo`}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-muted-foreground gap-2">
-                      <ImageOff className="h-4 w-4" />
-                      <span className="text-xs">No image</span>
-                    </div>
-                  )}
-                </div>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
