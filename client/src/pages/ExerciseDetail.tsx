@@ -75,6 +75,11 @@ export default function ExerciseDetail({ id }: { id: number }) {
               </div>
             )}
           </div>
+          {media.data?.reason === "missing_api_key" && (
+            <p className="text-xs text-amber-400">
+              ExerciseDB API key is missing. Set `EXERCISEDB_API_KEY` in your server environment.
+            </p>
+          )}
         </CardContent>
       </Card>
 

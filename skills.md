@@ -208,3 +208,13 @@ When extending media support:
    - `EXERCISEDB_API_URL`
    - `EXERCISEDB_API_HOST`
    - `EXERCISEDB_API_KEY`
+
+---
+
+## Skill 10: Commit-and-Push Workflow
+
+Repository workflow rule for this project:
+
+1. After any successful edit, stage, commit, and push in the same session.
+2. Use clear commit messages describing why the change was made.
+3. Skip push only when the user explicitly asks to keep changes local.

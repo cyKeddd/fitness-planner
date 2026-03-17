@@ -16,6 +16,7 @@ This document provides a comprehensive summary of all development work completed
 | `9cc49fe` | Mar 14, 2026 | Manus Agent | Sync GitHub changes, fix TS error, apply migration |
 | `7eb51b8` | Mar 14, 2026 | Vraj Gupta (GitHub) | README with live URL |
 | `local` | Mar 15, 2026 | Manus Agent | ExerciseDB media integration (real exercise image/video in detail view) |
+| `local` | Mar 15, 2026 | Manus Agent | Added repo workflow rule to always commit+push after edits |
 
 ---
 
@@ -196,6 +197,15 @@ This phase replaced local placeholder exercise visuals with real exercise media 
 
 - Removed temporary local image catalog test.
 - Reverted exercise-list test assertions that depended on synthetic `imageUrls`.
+
+---
+
+## Phase 9: Commit-and-Push Workflow Rule (`local`)
+
+Project documentation was updated to enforce a repository workflow rule:
+
+- agents and skills guidance now state that edits should be committed and pushed in the same session by default;
+- exceptions are only when the user explicitly asks to keep changes local.
 
 ---
 

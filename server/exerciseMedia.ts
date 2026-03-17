@@ -14,9 +14,14 @@ export type ExerciseMedia = {
   videoUrl: string | null;
   sourceName: string | null;
   source: "exercisedb" | "none";
+  reason?: "missing_api_key" | "not_found" | "request_failed";
 };
 
-const BASE_URL = process.env.EXERCISEDB_API_URL ?? "https://exercisedb.p.rapidapi.com";
+const BASE_URLS = [
+  process.env.EXERCISEDB_API_URL,
+  "https://exercisedb-api.p.rapidapi.com",
+  "https://exercisedb.p.rapidapi.com",
+].filter(Boolean) as string[];
 const API_KEY = process.env.EXERCISEDB_API_KEY ?? "";
 const API_HOST = process.env.EXERCISEDB_API_HOST ?? "exercisedb.p.rapidapi.com";
 const CACHE_TTL_MS = 1000 * 60 * 60 * 6;
@@ -24,7 +29,13 @@ const CACHE_TTL_MS = 1000 * 60 * 60 * 6;
 const cache = new Map<string, { value: ExerciseMedia; expiresAt: number }>();
 
 function normalizeName(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, " ");
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function buildHeaders() {
@@ -36,19 +47,19 @@ function buildHeaders() {
   return headers;
 }
 
-function firstResult(payload: unknown): ExternalExercise | null {
-  if (Array.isArray(payload) && payload.length > 0) return payload[0] as ExternalExercise;
+function allResults(payload: unknown): ExternalExercise[] {
+  if (Array.isArray(payload) && payload.length > 0) return payload as ExternalExercise[];
   if (payload && typeof payload === "object") {
     const obj = payload as Record<string, unknown>;
-    if (Array.isArray(obj.data) && obj.data.length > 0) return obj.data[0] as ExternalExercise;
-    if (Array.isArray(obj.results) && obj.results.length > 0) return obj.results[0] as ExternalExercise;
+    if (Array.isArray(obj.data) && obj.data.length > 0) return obj.data as ExternalExercise[];
+    if (Array.isArray(obj.results) && obj.results.length > 0) return obj.results as ExternalExercise[];
   }
-  return null;
+  return [];
 }
 
 function toMedia(result: ExternalExercise | null): ExerciseMedia {
   if (!result) {
-    return { imageUrl: null, videoUrl: null, sourceName: null, source: "none" };
+    return { imageUrl: null, videoUrl: null, sourceName: null, source: "none", reason: "not_found" };
   }
   return {
     imageUrl: result.imageUrl ?? result.gifUrl ?? null,
@@ -58,11 +69,38 @@ function toMedia(result: ExternalExercise | null): ExerciseMedia {
   };
 }
 
-async function fetchByPath(path: string): Promise<ExternalExercise | null> {
-  const response = await fetch(`${BASE_URL}${path}`, { headers: buildHeaders() });
-  if (!response.ok) return null;
-  const payload = await response.json();
-  return firstResult(payload);
+function scoreResult(query: string, result: ExternalExercise): number {
+  const q = normalizeName(query);
+  const n = normalizeName(result.name ?? "");
+  if (!n) return 0;
+  if (n === q) return 100;
+  if (n.includes(q)) return 80;
+  if (q.includes(n)) return 70;
+  const qTokens = new Set(q.split(" "));
+  const nTokens = n.split(" ");
+  const overlap = nTokens.filter((t) => qTokens.has(t)).length;
+  return overlap * 10;
+}
+
+function nameCandidates(exerciseName: string): string[] {
+  const raw = normalizeName(exerciseName);
+  const stripped = raw
+    .replace(/\b(barbell|dumbbell|machine|bodyweight|cable|kettlebell|lever|smith)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const base = [raw, stripped].filter(Boolean);
+  return Array.from(new Set(base));
+}
+
+async function fetchByPath(path: string): Promise<ExternalExercise[]> {
+  for (const baseUrl of BASE_URLS) {
+    const response = await fetch(`${baseUrl}${path}`, { headers: buildHeaders() });
+    if (!response.ok) continue;
+    const payload = await response.json();
+    const results = allResults(payload);
+    if (results.length > 0) return results;
+  }
+  return [];
 }
 
 export async function fetchExerciseMediaByName(exerciseName: string): Promise<ExerciseMedia> {
@@ -71,20 +109,38 @@ export async function fetchExerciseMediaByName(exerciseName: string): Promise<Ex
   const hit = cache.get(key);
   if (hit && hit.expiresAt > now) return hit.value;
 
+  if (!API_KEY) {
+    const missing: ExerciseMedia = {
+      imageUrl: null,
+      videoUrl: null,
+      sourceName: null,
+      source: "none",
+      reason: "missing_api_key",
+    };
+    cache.set(key, { value: missing, expiresAt: now + CACHE_TTL_MS });
+    return missing;
+  }
+
   try {
-    const encoded = encodeURIComponent(exerciseName.trim());
-    const direct = await fetchByPath(`/exercises/name/${encoded}?limit=1`);
-    const media = toMedia(direct);
-    if (media.imageUrl || media.videoUrl) {
-      cache.set(key, { value: media, expiresAt: now + CACHE_TTL_MS });
-      return media;
+    for (const candidate of nameCandidates(exerciseName)) {
+      const encoded = encodeURIComponent(candidate);
+      const matches = await fetchByPath(`/exercises/name/${encoded}?limit=10`);
+      if (matches.length === 0) continue;
+      const best = matches
+        .map((m) => ({ m, score: scoreResult(exerciseName, m) }))
+        .sort((a, b) => b.score - a.score)[0]?.m;
+      const media = toMedia(best ?? null);
+      if (media.imageUrl || media.videoUrl) {
+        cache.set(key, { value: media, expiresAt: now + CACHE_TTL_MS });
+        return media;
+      }
     }
 
-    const none: ExerciseMedia = { imageUrl: null, videoUrl: null, sourceName: null, source: "none" };
+    const none: ExerciseMedia = { imageUrl: null, videoUrl: null, sourceName: null, source: "none", reason: "not_found" };
     cache.set(key, { value: none, expiresAt: now + CACHE_TTL_MS });
     return none;
   } catch {
-    const none: ExerciseMedia = { imageUrl: null, videoUrl: null, sourceName: null, source: "none" };
+    const none: ExerciseMedia = { imageUrl: null, videoUrl: null, sourceName: null, source: "none", reason: "request_failed" };
     cache.set(key, { value: none, expiresAt: now + CACHE_TTL_MS });
     return none;
   }

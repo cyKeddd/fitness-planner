@@ -88,6 +88,8 @@ These rules must be followed by any agent working on this project. Violating the
 
 **7. Never hardcode the server port.** The port is dynamically assigned. Use the environment configuration.
 
+**8. Always push after edits in this repo.** After making code or docs changes, commit and push to `origin/main` in the same working session unless the user explicitly says not to push.
+
 ---
 
 ## How to Add a New Feature
