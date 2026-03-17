@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="Cardio exercise">
+  <rect width="1200" height="675" fill="#0f172a"/>
+  <path d="M140 460h170l80-170 130 280 120-240 80 130h200" stroke="#22d3ee" stroke-width="24" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="870" cy="454" r="54" fill="#0ea5e9"/>
+  <text x="600" y="610" font-family="Arial, sans-serif" font-size="44" text-anchor="middle" fill="#e2e8f0">Cardio</text>
+</svg>

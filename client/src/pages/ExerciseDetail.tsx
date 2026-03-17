@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Dumbbell, Target, Zap } from "lucide-react";
+import { ArrowLeft, Dumbbell, Target, Zap, ImageOff } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -15,6 +16,11 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 export default function ExerciseDetail({ id }: { id: number }) {
   const [, setLocation] = useLocation();
   const { data: exercise, isLoading } = trpc.exercises.get.useQuery({ id });
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+
+  useEffect(() => {
+    setSelectedImageIdx(0);
+  }, [id]);
 
   if (isLoading) {
     return (
@@ -35,6 +41,9 @@ export default function ExerciseDetail({ id }: { id: number }) {
       </div>
     );
   }
+
+  const gallery = Array.isArray(exercise.imageUrls) ? exercise.imageUrls : [];
+  const primaryImage = gallery[selectedImageIdx] ?? exercise.imageUrl ?? null;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -58,6 +67,35 @@ export default function ExerciseDetail({ id }: { id: number }) {
           </div>
         </div>
       </div>
+
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="h-64 w-full rounded-lg overflow-hidden bg-secondary/50">
+            {primaryImage ? (
+              <img src={primaryImage} alt={`${exercise.name} guidance`} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-muted-foreground gap-2">
+                <ImageOff className="h-4 w-4" />
+                <span className="text-sm">No curated image</span>
+              </div>
+            )}
+          </div>
+          {gallery.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto">
+              {gallery.map((url, idx) => (
+                <button
+                  type="button"
+                  key={url}
+                  onClick={() => setSelectedImageIdx(idx)}
+                  className={`h-16 w-24 rounded-md overflow-hidden border ${idx === selectedImageIdx ? "border-primary" : "border-border"}`}
+                >
+                  <img src={url} alt={`${exercise.name} ${idx + 1}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

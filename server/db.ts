@@ -14,8 +14,10 @@ import {
   workoutTemplateExercises, InsertWorkoutTemplateExercise,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { validateExerciseImageCoverage, withExerciseImages } from "../shared/exerciseImages";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let exerciseImageCoverageVerified = false;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -66,6 +68,11 @@ export async function getUserByOpenId(openId: string) {
 
 // ==================== USER PROFILE ====================
 
+/**
+ * 
+ * @param userId Method used to get the user profile with the help of user id you're passing
+ * @returns Returns the user profile if found, otherwise returns null
+ */
 export async function getProfile(userId: number) {
   const db = await getDb();
   if (!db) return null;
@@ -99,6 +106,20 @@ export async function listExercises(filters?: {
   const db = await getDb();
   if (!db) return { exercises: [], total: 0 };
 
+  if (!exerciseImageCoverageVerified) {
+    const allExercises = await db.select({
+      id: exercises.id,
+      name: exercises.name,
+      workoutType: exercises.workoutType,
+      imageUrl: exercises.imageUrl,
+    }).from(exercises);
+    const coverage = validateExerciseImageCoverage(allExercises);
+    if (!coverage.ok) {
+      throw new Error(`Missing curated images for exercises: ${coverage.missing.join(", ")}`);
+    }
+    exerciseImageCoverageVerified = true;
+  }
+
   const conditions = [];
   if (filters?.workoutType) conditions.push(eq(exercises.workoutType, filters.workoutType));
   if (filters?.equipment) conditions.push(eq(exercises.equipment, filters.equipment));
@@ -116,14 +137,15 @@ export async function listExercises(filters?: {
   const countResult = await db.select({ count: sql<number>`count(*)` }).from(exercises).where(where);
   const total = countResult[0]?.count ?? 0;
 
-  return { exercises: rows, total };
+  return { exercises: rows.map(withExerciseImages), total };
 }
 
 export async function getExercise(id: number) {
   const db = await getDb();
   if (!db) return null;
   const rows = await db.select().from(exercises).where(eq(exercises.id, id)).limit(1);
-  return rows[0] ?? null;
+  if (!rows[0]) return null;
+  return withExerciseImages(rows[0]);
 }
 
 // ==================== WORKOUT PLANS ====================

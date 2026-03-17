@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" role="img" aria-label="CrossFit exercise">
+  <rect width="1200" height="675" fill="#0f172a"/>
+  <rect x="220" y="300" width="760" height="40" rx="12" fill="#475569"/>
+  <rect x="180" y="250" width="40" height="140" rx="8" fill="#94a3b8"/>
+  <rect x="980" y="250" width="40" height="140" rx="8" fill="#94a3b8"/>
+  <circle cx="320" cy="320" r="66" fill="#64748b"/>
+  <circle cx="880" cy="320" r="66" fill="#64748b"/>
+  <text x="600" y="610" font-family="Arial, sans-serif" font-size="44" text-anchor="middle" fill="#e2e8f0">CrossFit</text>
+</svg>

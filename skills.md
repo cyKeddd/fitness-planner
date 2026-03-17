@@ -192,3 +192,21 @@ The app supports **kg and lbs** weight units. The user's preference is stored in
 The codebase currently contains some debug `fetch` calls in `Home.tsx` (agent logging to `127.0.0.1:7782`). These were added during development for debugging the onboarding redirect flow.
 
 **Convention:** Debug logging blocks are wrapped in `// #region agent log` and `// #endregion` comments. These should be removed before production deployment. When encountering these blocks, clean them up unless they are actively being used for debugging.
+
+---
+
+## Skill 9: Curated Exercise Image Consistency
+
+Exercise guidance images are managed by the curated image catalog in `shared/exerciseImages.ts` and rendered in:
+
+- `Exercises.tsx`
+- `ExerciseDetail.tsx`
+- `ActiveWorkout.tsx`
+- `SessionDetail.tsx`
+
+When extending the exercise library:
+
+1. Ensure each exercise resolves to at least one curated local image via `workoutType` mapping.
+2. Keep assets lightweight and store them in `client/public/exercise-images/`.
+3. Use `withExerciseImages()` for API-facing exercise payloads so `imageUrl` and `imageUrls` are always consistent.
+4. Keep coverage validation enabled (`validateExerciseImageCoverage`) so missing mappings fail fast.

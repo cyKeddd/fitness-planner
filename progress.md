@@ -15,6 +15,7 @@ This document provides a comprehensive summary of all development work completed
 | `5287ba0` | Mar 14, 2026 | Vraj Gupta (GitHub) | Onboarding fix, unit preferences, UI refinements |
 | `9cc49fe` | Mar 14, 2026 | Manus Agent | Sync GitHub changes, fix TS error, apply migration |
 | `7eb51b8` | Mar 14, 2026 | Vraj Gupta (GitHub) | README with live URL |
+| `local` | Mar 15, 2026 | Manus Agent | Curated local exercise image rollout with strict coverage validation |
 
 ---
 
@@ -173,6 +174,46 @@ Vraj Gupta added a `README.md` to the GitHub repository with the live URL: `fram
 
 ---
 
+## Phase 8: Curated Exercise Images (`local`)
+
+This phase implemented a consistent curated image system for exercises and surfaced those images in the library, active workout, and session detail experiences.
+
+### Curated Image Catalog and Coverage Gates
+
+A new shared utility (`shared/exerciseImages.ts`) now centralizes:
+
+- workout type to curated local image mapping
+- exercise name normalization for lookup consistency
+- image payload enrichment (`imageUrl` + `imageUrls`)
+- strict coverage validation (`validateExerciseImageCoverage`)
+
+Coverage validation is enforced in both seed flow and server data flow so missing mappings fail fast instead of silently rendering inconsistent UI.
+
+### Local Asset Rollout
+
+Curated local SVG assets were added under `client/public/exercise-images/` for all supported workout types:
+`weights`, `plyometrics`, `cardio`, `hiit`, `yoga`, `stretching`, `calisthenics`, `bodyweight`, `crossfit`, `sport_specific`.
+
+### Backend and API Updates
+
+- `seed-exercises.mjs` now validates coverage and seeds `imageUrl`.
+- `server/db.ts` enriches exercise responses with curated image fields and verifies coverage at runtime.
+- Exercise API consumers now receive deterministic image metadata for consistent rendering.
+
+### Frontend Updates
+
+- `Exercises.tsx`: thumbnails with no-image fallback.
+- `ExerciseDetail.tsx`: primary image rendering plus gallery support via `imageUrls`.
+- `ActiveWorkout.tsx`: image resolution by normalized exercise name for plan/template/manual flows.
+- `SessionDetail.tsx`: grouped exercise cards now render curated thumbnails.
+
+### Test Additions
+
+- Added `server/exerciseImages.test.ts` (catalog behavior + validation coverage).
+- Expanded `server/fitness.test.ts` exercise assertions to include image metadata.
+
+---
+
 ## Current State Summary
 
 The application is fully functional with the following metrics:
@@ -185,7 +226,7 @@ The application is fully functional with the following metrics:
 | Database tables | 11 |
 | Seeded exercises | 90+ |
 | Database migrations | 5 (0000–0004) |
-| Vitest tests | 35 (all passing) |
+| Vitest tests | 40 |
 | TypeScript errors | 0 |
 
 ### Feature Completeness
@@ -215,6 +256,6 @@ The application is fully functional with the following metrics:
 
 2. **No formal foreign key constraints** — The database uses integer columns for relationships but does not enforce FK constraints at the database level. Referential integrity is maintained at the application layer.
 
-3. **Exercise images** — The `exercises` table has an `imageUrl` column but no exercises currently have images populated. Visual exercise guides would improve the user experience.
+3. **Image curation depth** — Images are currently mapped at workout-type level for full consistency coverage. Future refinement: per-exercise multi-image curation.
 
 4. **No workout calendar view** — Users cannot see their workout schedule on a calendar. This has been a recurring suggestion for future development.

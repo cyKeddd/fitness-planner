@@ -14,12 +14,14 @@ import { ArrowLeft, Clock, Dumbbell, Calendar, Bookmark, Loader2 } from "lucide-
 import { useLocation } from "wouter";
 import { useState } from "react";
 import { toast } from "sonner";
+import { buildExerciseImageNameMap, normalizeExerciseName } from "@shared/exerciseImages";
 
 export default function SessionDetail({ id }: { id: number }) {
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const { formatWeight } = useUnit();
   const { data: session, isLoading } = trpc.sessions.get.useQuery({ id }, { enabled: isAuthenticated });
+  const exerciseLibrary = trpc.exercises.list.useQuery({ limit: 100 }, { enabled: isAuthenticated });
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDesc, setTemplateDesc] = useState("");
@@ -53,6 +55,7 @@ export default function SessionDetail({ id }: { id: number }) {
     acc[log.exerciseName].push(log);
     return acc;
   }, {});
+  const imageByExerciseName = buildExerciseImageNameMap(exerciseLibrary.data?.exercises ?? []);
 
   const handleOpenTemplateDialog = () => {
     setTemplateName(session.name);
@@ -105,7 +108,16 @@ export default function SessionDetail({ id }: { id: number }) {
         <Card key={name}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Dumbbell className="h-4 w-4 text-primary" /> {name}
+              {imageByExerciseName[normalizeExerciseName(name)]?.imageUrl ? (
+                <img
+                  src={imageByExerciseName[normalizeExerciseName(name)]!.imageUrl!}
+                  alt={`${name} demo`}
+                  className="h-8 w-8 rounded-md object-cover"
+                />
+              ) : (
+                <Dumbbell className="h-4 w-4 text-primary" />
+              )}
+              {name}
             </CardTitle>
           </CardHeader>
           <CardContent>

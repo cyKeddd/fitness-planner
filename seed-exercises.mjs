@@ -1,6 +1,23 @@
 // Seed script for curated exercise database
 import mysql from "mysql2/promise";
 
+const WORKOUT_TYPE_IMAGE_LIBRARY = {
+  weights: ["/exercise-images/weights.svg"],
+  plyometrics: ["/exercise-images/plyometrics.svg"],
+  cardio: ["/exercise-images/cardio.svg"],
+  hiit: ["/exercise-images/hiit.svg"],
+  yoga: ["/exercise-images/yoga.svg"],
+  stretching: ["/exercise-images/stretching.svg"],
+  calisthenics: ["/exercise-images/calisthenics.svg"],
+  bodyweight: ["/exercise-images/bodyweight.svg"],
+  crossfit: ["/exercise-images/crossfit.svg"],
+  sport_specific: ["/exercise-images/sport_specific.svg"],
+};
+
+function getCuratedImageUrls(workoutType) {
+  return WORKOUT_TYPE_IMAGE_LIBRARY[workoutType] ?? [];
+}
+
 const exercises = [
   // === WEIGHT TRAINING ===
   { name: "Barbell Bench Press", description: "Compound chest exercise performed lying on a flat bench.", instructions: "Lie on a flat bench, grip the barbell slightly wider than shoulder-width. Lower the bar to your mid-chest, then press up until arms are fully extended.", workoutType: "weights", muscleGroups: ["chest", "triceps", "shoulders"], equipment: "barbell", difficulty: "intermediate" },
@@ -116,6 +133,14 @@ const exercises = [
 async function seed() {
   const conn = await mysql.createConnection(process.env.DATABASE_URL);
 
+  const missingCoverage = exercises
+    .filter((exercise) => getCuratedImageUrls(exercise.workoutType).length === 0)
+    .map((exercise) => `${exercise.name} (${exercise.workoutType})`);
+
+  if (missingCoverage.length > 0) {
+    throw new Error(`Missing curated images for exercises: ${missingCoverage.join(", ")}`);
+  }
+
   // Check if exercises already exist
   const [rows] = await conn.execute("SELECT COUNT(*) as cnt FROM exercises");
   if (rows[0].cnt > 0) {
@@ -125,9 +150,10 @@ async function seed() {
   }
 
   for (const ex of exercises) {
+    const imageUrls = getCuratedImageUrls(ex.workoutType);
     await conn.execute(
-      `INSERT INTO exercises (name, description, instructions, workoutType, muscleGroups, equipment, difficulty) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [ex.name, ex.description, ex.instructions, ex.workoutType, JSON.stringify(ex.muscleGroups), ex.equipment, ex.difficulty]
+      `INSERT INTO exercises (name, description, instructions, workoutType, muscleGroups, equipment, difficulty, imageUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [ex.name, ex.description, ex.instructions, ex.workoutType, JSON.stringify(ex.muscleGroups), ex.equipment, ex.difficulty, imageUrls[0] ?? null]
     );
   }
 
