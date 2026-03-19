@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Dumbbell, Target, Zap, ImageOff, VideoOff } from "lucide-react";
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -19,6 +20,12 @@ export default function ExerciseDetail({ id }: { id: number }) {
     { name: exercise?.name ?? "" },
     { enabled: !!exercise?.name }
   );
+
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7390/ingest/4ad115fb-1f1e-4021-b27e-810d44d0c03b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c9da6f'},body:JSON.stringify({sessionId:'c9da6f',runId:'initial',hypothesisId:'H5',location:'client/src/pages/ExerciseDetail.tsx:useEffect',message:'Exercise detail media query state',data:{exerciseId:id,exerciseName:exercise?.name ?? null,mediaEnabled:Boolean(exercise?.name),mediaStatus:media.status,mediaReason:media.data?.reason ?? null,hasImage:Boolean(media.data?.imageUrl),hasVideo:Boolean(media.data?.videoUrl)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+  }, [id, exercise?.name, media.status, media.data?.reason, media.data?.imageUrl, media.data?.videoUrl]);
 
   if (isLoading) {
     return (

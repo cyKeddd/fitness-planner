@@ -69,7 +69,14 @@ export const appRouter = router({
     mediaByName: publicProcedure
       .input(z.object({ name: z.string().min(1) }))
       .query(async ({ input }) => {
-        return fetchExerciseMediaByName(input.name);
+        // #region agent log
+        fetch('http://127.0.0.1:7390/ingest/4ad115fb-1f1e-4021-b27e-810d44d0c03b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c9da6f'},body:JSON.stringify({sessionId:'c9da6f',runId:'initial',hypothesisId:'H5',location:'server/routers.ts:mediaByName:entry',message:'mediaByName endpoint called',data:{name:input.name},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        const media = await fetchExerciseMediaByName(input.name);
+        // #region agent log
+        fetch('http://127.0.0.1:7390/ingest/4ad115fb-1f1e-4021-b27e-810d44d0c03b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c9da6f'},body:JSON.stringify({sessionId:'c9da6f',runId:'initial',hypothesisId:'H5',location:'server/routers.ts:mediaByName:exit',message:'mediaByName endpoint returning',data:{name:input.name,reason:media.reason ?? null,hasImage:Boolean(media.imageUrl),hasVideo:Boolean(media.videoUrl)},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
+        return media;
       }),
   }),
 
