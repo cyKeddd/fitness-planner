@@ -78,3 +78,6 @@
 - [x] Create skills.md - project-specific skills and conventions for agents
 - [x] Create agents.md - reference guide for any agent working on this project
 - [x] Create progress.md - comprehensive summary of all progress made in the codebase
+
+## Deployment Fix
+- [x] Fix `__dirname is not defined in ES module scope` crash in `server/exerciseMedia.ts` — replaced with `import.meta.url` pattern

@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 export type ExerciseMedia = {
   gifUrl: string | null;
@@ -8,6 +9,10 @@ export type ExerciseMedia = {
 };
 
 type MapEntry = { gifUrl: string; sourceName: string };
+
+// Use import.meta.url instead of __dirname — this file is compiled as an ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const mediaMap: Record<string, MapEntry> = JSON.parse(
   readFileSync(join(__dirname, "exerciseMediaMap.json"), "utf8"),

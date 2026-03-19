@@ -11,15 +11,15 @@ describe("ExerciseDB API Integration", () => {
       // The function should return an ExerciseMedia object
       expect(result).toBeDefined();
       expect(result).toHaveProperty("source");
-      expect(result).toHaveProperty("imageUrl");
-      expect(result).toHaveProperty("videoUrl");
+      expect(result).toHaveProperty("gifUrl");
+      expect(result).toHaveProperty("sourceName");
 
-      // If API key is valid, we should get data from exercisedb
+      // If the exercise is found in the static map, we should get a gifUrl
       if (result.source === "exercisedb") {
-        expect(result.imageUrl || result.videoUrl).toBeTruthy();
+        expect(result.gifUrl).toBeTruthy();
       } else if (result.source === "none") {
-        // If no data, there should be a reason
-        expect(result.reason).toBeDefined();
+        // If not found in map, gifUrl should be null
+        expect(result.gifUrl).toBeNull();
       }
     },
     { timeout: 15000 }
@@ -31,8 +31,7 @@ describe("ExerciseDB API Integration", () => {
     expect(result).toBeDefined();
     // Should either return no media or indicate not found
     expect(
-      result.source === "none" ||
-        (result.imageUrl === null && result.videoUrl === null)
+      result.source === "none" && result.gifUrl === null
     ).toBe(true);
   });
 });
