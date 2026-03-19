@@ -66,7 +66,7 @@ fitness-planner/
 └── todo.md                    # Feature tracking
 ```
 
-Exercise media (image/video) is fetched from ExerciseDB via `server/exerciseMedia.ts` and shown in the exercise detail page.
+Exercise media (animated GIFs) is served from a pre-built static mapping (`server/exerciseMediaMap.json`) loaded by `server/exerciseMedia.ts`. No runtime API calls are needed.
 
 ---
 
@@ -76,7 +76,7 @@ These rules must be followed by any agent working on this project. Violating the
 
 **1. Never edit files in `server/_core/`.** This directory contains framework-level plumbing (OAuth, context, Vite bridge). Modifications here will break the infrastructure.
 
-**2. Exercise media is external.** Do not add local placeholder SVG packs for exercise guidance. Use ExerciseDB-backed media via server utilities.
+**2. Exercise media uses the static mapping.** GIF URLs are stored in `server/exerciseMediaMap.json` (keyed by normalized exercise name). Do not add runtime API calls or local placeholder SVGs. To add media for a new exercise, add an entry to the JSON map with the CDN URL from `static.exercisedb.dev`.
 
 **3. Always store weights in kilograms in the database.** The `useUnit()` hook handles display conversion to lbs on the frontend. Never store lbs values in the database.
 
@@ -168,7 +168,7 @@ These are mistakes that have been encountered during development. Avoid repeatin
 | Infinite loading from unstable query references | Stabilize objects/arrays with `useState` or `useMemo` |
 | Debug fetch calls left in production code | Remove `// #region agent log` blocks before deploying |
 | Plan-based workouts not auto-populating | Ensure `planDay.getExercises` endpoint is called and exercises are mapped to local state |
-| Exercise image/video missing in detail view | Verify `exercises.mediaByName` is returning data and ExerciseDB env vars (`EXERCISEDB_API_KEY`, host/url) are configured |
+| Exercise image missing in detail view | Check that the exercise name normalizes to a key in `server/exerciseMediaMap.json`. If missing, add the entry with the correct `gifUrl` from `static.exercisedb.dev` |
 
 ---
 

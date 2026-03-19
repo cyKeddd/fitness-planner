@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Dumbbell, Target, Zap, ImageOff, VideoOff } from "lucide-react";
-import { useEffect } from "react";
+import { ArrowLeft, Dumbbell, Target, Zap, ImageOff } from "lucide-react";
 import { useLocation } from "wouter";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -20,12 +19,6 @@ export default function ExerciseDetail({ id }: { id: number }) {
     { name: exercise?.name ?? "" },
     { enabled: !!exercise?.name }
   );
-
-  useEffect(() => {
-    // #region agent log
-    fetch('http://127.0.0.1:7390/ingest/4ad115fb-1f1e-4021-b27e-810d44d0c03b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c9da6f'},body:JSON.stringify({sessionId:'c9da6f',runId:'initial',hypothesisId:'H5',location:'client/src/pages/ExerciseDetail.tsx:useEffect',message:'Exercise detail media query state',data:{exerciseId:id,exerciseName:exercise?.name ?? null,mediaEnabled:Boolean(exercise?.name),mediaStatus:media.status,mediaReason:media.data?.reason ?? null,hasImage:Boolean(media.data?.imageUrl),hasVideo:Boolean(media.data?.videoUrl)},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-  }, [id, exercise?.name, media.status, media.data?.reason, media.data?.imageUrl, media.data?.videoUrl]);
 
   if (isLoading) {
     return (
@@ -71,43 +64,21 @@ export default function ExerciseDetail({ id }: { id: number }) {
       </div>
 
       <Card>
-        <CardContent className="p-4 space-y-3">
-          <div className="h-64 w-full rounded-lg overflow-hidden bg-secondary/50">
-            {media.data?.imageUrl ? (
-              <img src={media.data.imageUrl} alt={`${exercise.name} demonstration`} className="h-full w-full object-cover" />
+        <CardContent className="p-4">
+          <div className="w-full rounded-lg overflow-hidden bg-secondary/50 flex items-center justify-center">
+            {media.data?.gifUrl ? (
+              <img
+                src={media.data.gifUrl}
+                alt={`${exercise.name} demonstration`}
+                className="max-h-80 w-auto object-contain"
+              />
             ) : (
-              <div className="h-full w-full flex items-center justify-center text-muted-foreground gap-2">
+              <div className="h-64 w-full flex items-center justify-center text-muted-foreground gap-2">
                 <ImageOff className="h-4 w-4" />
                 <span className="text-sm">No image available</span>
               </div>
             )}
           </div>
-          {media.data?.reason === "missing_api_key" && (
-            <p className="text-xs text-amber-400">
-              ExerciseDB API key is missing. Set `EXERCISEDB_API_KEY` in your server environment.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Exercise Video</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {media.data?.videoUrl ? (
-            <video
-              controls
-              preload="metadata"
-              className="w-full rounded-lg bg-black"
-              src={media.data.videoUrl}
-            />
-          ) : (
-            <div className="h-40 w-full rounded-lg bg-secondary/50 flex items-center justify-center text-muted-foreground gap-2">
-              <VideoOff className="h-4 w-4" />
-              <span className="text-sm">No video available</span>
-            </div>
-          )}
         </CardContent>
       </Card>
 

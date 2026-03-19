@@ -17,6 +17,7 @@ This document provides a comprehensive summary of all development work completed
 | `7eb51b8` | Mar 14, 2026 | Vraj Gupta (GitHub) | README with live URL |
 | `local` | Mar 15, 2026 | Manus Agent | ExerciseDB media integration (real exercise image/video in detail view) |
 | `local` | Mar 15, 2026 | Manus Agent | Added repo workflow rule to always commit+push after edits |
+| `local` | Mar 15, 2026 | Manus Agent | Static exercise GIF mapping (replaced broken runtime API) |
 
 ---
 
@@ -177,26 +178,9 @@ Vraj Gupta added a `README.md` to the GitHub repository with the live URL: `fram
 
 ## Phase 8: ExerciseDB Media Integration (`local`)
 
-This phase replaced local placeholder exercise visuals with real exercise media fetched from ExerciseDB and displayed in the exercise detail experience.
+This phase replaced local placeholder exercise visuals with real exercise media from ExerciseDB.
 
-### Backend and API Updates
-
-- Added `server/exerciseMedia.ts` to fetch and cache ExerciseDB media by exercise name.
-- Added `exercises.mediaByName` endpoint in `server/routers.ts`.
-- Removed local SVG/image catalog plumbing from `server/db.ts` and seed coverage enforcement.
-
-### Frontend Updates
-
-- `ExerciseDetail.tsx` now loads ExerciseDB media via `trpc.exercises.mediaByName` and renders:
-  - real exercise image (when available),
-  - exercise video player (when available),
-  - graceful no-media fallback UI.
-- Removed local image rendering additions from `Exercises.tsx`, `ActiveWorkout.tsx`, and `SessionDetail.tsx`.
-
-### Testing and Cleanup
-
-- Removed temporary local image catalog test.
-- Reverted exercise-list test assertions that depended on synthetic `imageUrls`.
+Initially, media was fetched at runtime via the ExerciseDB RapidAPI endpoint, but this failed because the API key subscription was inactive (403 Forbidden) and the free v1 API was heavily rate-limited (429). In Phase 10 the approach was replaced with a static mapping.
 
 ---
 
@@ -206,6 +190,28 @@ Project documentation was updated to enforce a repository workflow rule:
 
 - agents and skills guidance now state that edits should be committed and pushed in the same session by default;
 - exceptions are only when the user explicitly asks to keep changes local.
+
+---
+
+## Phase 10: Static Exercise GIF Mapping (`local`)
+
+Replaced the broken runtime ExerciseDB API integration with a pre-built static mapping.
+
+### Root Cause
+
+The runtime API approach failed for two reasons:
+1. The RapidAPI key returned **403 Forbidden** (subscription not active).
+2. The free ExerciseDB v1 API returned **429 Too Many Requests** after a few calls.
+
+### Solution
+
+- Created `scripts/build-exercise-map.mjs` — a one-time script that fetches all 1,500 ExerciseDB v1 exercises (paginated with retry logic), matches each of the 90 seeded exercises by name similarity scoring, and outputs `server/exerciseMediaMap.json`.
+- **55 of 90 exercises** received accurate GIF matches from ExerciseDB (the unmatched ~35 are mostly cardio, yoga, and sport-specific exercises not in ExerciseDB's gym-focused dataset).
+- Rewrote `server/exerciseMedia.ts` to read the static JSON mapping at startup — no API calls, no API key, no caching logic needed.
+- Updated `ExerciseDetail.tsx` to render animated GIFs instead of static images/videos, with a clean "No image available" fallback for unmatched exercises.
+- Removed all ExerciseDB environment variables (`EXERCISEDB_API_KEY`, `EXERCISEDB_API_HOST`, `EXERCISEDB_API_URL`) from `.env`.
+- Removed all debug instrumentation added during the investigation.
+- GIF assets are hosted on the public CDN at `https://static.exercisedb.dev/media/...` — no authentication required.
 
 ---
 
@@ -251,6 +257,6 @@ The application is fully functional with the following metrics:
 
 2. **No formal foreign key constraints** — The database uses integer columns for relationships but does not enforce FK constraints at the database level. Referential integrity is maintained at the application layer.
 
-3. **ExerciseDB dependency** — Exercise media now depends on external API availability and credentials. Add monitoring and fallback strategy for API failures/rate limits.
+3. **~35 exercises without GIFs** — Cardio, yoga, and sport-specific exercises (Running, Swimming, Sun Salutation, etc.) have no matching ExerciseDB entry. These show a clean fallback UI. Consider sourcing GIFs from another dataset in the future.
 
 4. **No workout calendar view** — Users cannot see their workout schedule on a calendar. This has been a recurring suggestion for future development.

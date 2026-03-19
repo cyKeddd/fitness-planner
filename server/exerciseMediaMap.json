@@ -1,0 +1,218 @@
+{
+  "barbell bench press": {
+    "gifUrl": "https://static.exercisedb.dev/media/EIeI8Vf.gif",
+    "sourceName": "barbell bench press"
+  },
+  "barbell squat": {
+    "gifUrl": "https://static.exercisedb.dev/media/oR7O9LW.gif",
+    "sourceName": "barbell squat (on knees)"
+  },
+  "deadlift": {
+    "gifUrl": "https://static.exercisedb.dev/media/KUaoUV8.gif",
+    "sourceName": "band straight leg deadlift"
+  },
+  "overhead press": {
+    "gifUrl": "https://static.exercisedb.dev/media/kTbSH9h.gif",
+    "sourceName": "barbell seated overhead press"
+  },
+  "barbell row": {
+    "gifUrl": "https://static.exercisedb.dev/media/dmgMp3n.gif",
+    "sourceName": "barbell incline row"
+  },
+  "dumbbell curl": {
+    "gifUrl": "https://static.exercisedb.dev/media/F3xgbjF.gif",
+    "sourceName": "dumbbell incline biceps curl"
+  },
+  "dumbbell lateral raise": {
+    "gifUrl": "https://static.exercisedb.dev/media/DsgkuIt.gif",
+    "sourceName": "dumbbell lateral raise"
+  },
+  "dumbbell chest fly": {
+    "gifUrl": "https://static.exercisedb.dev/media/xXm4nYq.gif",
+    "sourceName": "dumbbell decline fly"
+  },
+  "tricep dips": {
+    "gifUrl": "https://static.exercisedb.dev/media/bZq4bwK.gif",
+    "sourceName": "weighted tricep dips"
+  },
+  "leg press": {
+    "gifUrl": "https://static.exercisedb.dev/media/V07qpXy.gif",
+    "sourceName": "lever alternate leg press"
+  },
+  "lat pulldown": {
+    "gifUrl": "https://static.exercisedb.dev/media/ecpY0rH.gif",
+    "sourceName": "reverse grip machine lat pulldown"
+  },
+  "dumbbell shoulder press": {
+    "gifUrl": "https://static.exercisedb.dev/media/znQUdHY.gif",
+    "sourceName": "dumbbell seated shoulder press"
+  },
+  "romanian deadlift": {
+    "gifUrl": "https://static.exercisedb.dev/media/wQ2c4XD.gif",
+    "sourceName": "barbell romanian deadlift"
+  },
+  "incline dumbbell press": {
+    "gifUrl": "https://static.exercisedb.dev/media/TVdivgY.gif",
+    "sourceName": "dumbbell incline alternate press"
+  },
+  "hammer curl": {
+    "gifUrl": "https://static.exercisedb.dev/media/GNhAeJ0.gif",
+    "sourceName": "dumbbell hammer curls (with arm blaster)"
+  },
+  "leg curl": {
+    "gifUrl": "https://static.exercisedb.dev/media/17lJ1kr.gif",
+    "sourceName": "lever lying leg curl"
+  },
+  "leg extension": {
+    "gifUrl": "https://static.exercisedb.dev/media/Y1MsI1l.gif",
+    "sourceName": "resistance band leg extension"
+  },
+  "cable tricep pushdown": {
+    "gifUrl": "https://static.exercisedb.dev/media/gAwDzB3.gif",
+    "sourceName": "cable triceps pushdown (v-bar)"
+  },
+  "jump squats": {
+    "gifUrl": "https://static.exercisedb.dev/media/LIlE5Tn.gif",
+    "sourceName": "jump squat"
+  },
+  "burpees": {
+    "gifUrl": "https://static.exercisedb.dev/media/dK9394r.gif",
+    "sourceName": "burpee"
+  },
+  "running": {
+    "gifUrl": "https://static.exercisedb.dev/media/oLrKqDH.gif",
+    "sourceName": "run"
+  },
+  "jump rope": {
+    "gifUrl": "https://static.exercisedb.dev/media/e1e76I2.gif",
+    "sourceName": "jump rope"
+  },
+  "mountain climbers": {
+    "gifUrl": "https://static.exercisedb.dev/media/RJgzwny.gif",
+    "sourceName": "mountain climber"
+  },
+  "battle ropes": {
+    "gifUrl": "https://static.exercisedb.dev/media/RJa4tCo.gif",
+    "sourceName": "battling ropes"
+  },
+  "kettlebell swings": {
+    "gifUrl": "https://static.exercisedb.dev/media/UHJlbu3.gif",
+    "sourceName": "kettlebell swing"
+  },
+  "high knees": {
+    "gifUrl": "https://static.exercisedb.dev/media/J9zIWig.gif",
+    "sourceName": "walking high knees lunge"
+  },
+  "hamstring stretch": {
+    "gifUrl": "https://static.exercisedb.dev/media/99rWm7w.gif",
+    "sourceName": "hamstring stretch"
+  },
+  "quad stretch": {
+    "gifUrl": "https://static.exercisedb.dev/media/tFGKm99.gif",
+    "sourceName": "intermediate hip flexor and quad stretch"
+  },
+  "hip flexor stretch": {
+    "gifUrl": "https://static.exercisedb.dev/media/2LQkNPW.gif",
+    "sourceName": "exercise ball hip flexor stretch"
+  },
+  "chest stretch": {
+    "gifUrl": "https://static.exercisedb.dev/media/ykA5tU7.gif",
+    "sourceName": "chest stretch with exercise ball"
+  },
+  "push-ups": {
+    "gifUrl": "https://static.exercisedb.dev/media/KhHJ338.gif",
+    "sourceName": "push-up to side plank"
+  },
+  "pull-ups": {
+    "gifUrl": "https://static.exercisedb.dev/media/50BETrz.gif",
+    "sourceName": "biceps narrow pull-ups"
+  },
+  "chin-ups": {
+    "gifUrl": "https://static.exercisedb.dev/media/G70mEAJ.gif",
+    "sourceName": "chin-ups (narrow parallel grip)"
+  },
+  "plank": {
+    "gifUrl": "https://static.exercisedb.dev/media/VBAWRPG.gif",
+    "sourceName": "weighted front plank"
+  },
+  "lunges": {
+    "gifUrl": "https://static.exercisedb.dev/media/K9VL0Jq.gif",
+    "sourceName": "lunge with twist"
+  },
+  "dips": {
+    "gifUrl": "https://static.exercisedb.dev/media/LkoAWAE.gif",
+    "sourceName": "elbow dips"
+  },
+  "muscle-ups": {
+    "gifUrl": "https://static.exercisedb.dev/media/Af0EW2I.gif",
+    "sourceName": "muscle-up (on vertical bar)"
+  },
+  "handstand push-ups": {
+    "gifUrl": "https://static.exercisedb.dev/media/XooAdhl.gif",
+    "sourceName": "handstand"
+  },
+  "l-sit": {
+    "gifUrl": "https://static.exercisedb.dev/media/UpWmA5E.gif",
+    "sourceName": "l-sit on floor"
+  },
+  "inverted rows": {
+    "gifUrl": "https://static.exercisedb.dev/media/bZGHsAZ.gif",
+    "sourceName": "inverted row"
+  },
+  "clean and jerk": {
+    "gifUrl": "https://static.exercisedb.dev/media/vzAxBtt.gif",
+    "sourceName": "kettlebell one arm clean and jerk"
+  },
+  "snatch": {
+    "gifUrl": "https://static.exercisedb.dev/media/dG5Smob.gif",
+    "sourceName": "snatch pull"
+  },
+  "thrusters": {
+    "gifUrl": "https://static.exercisedb.dev/media/yWxMvB5.gif",
+    "sourceName": "kettlebell thruster"
+  },
+  "kipping pull-ups": {
+    "gifUrl": "https://static.exercisedb.dev/media/lBDjFxJ.gif",
+    "sourceName": "pull-up"
+  },
+  "rope climbs": {
+    "gifUrl": "https://static.exercisedb.dev/media/yaAxcQr.gif",
+    "sourceName": "rope climb"
+  },
+  "bear crawl": {
+    "gifUrl": "https://static.exercisedb.dev/media/0Yz8WdV.gif",
+    "sourceName": "bear crawl"
+  },
+  "calf raises": {
+    "gifUrl": "https://static.exercisedb.dev/media/Lsqrgh4.gif",
+    "sourceName": "smith reverse calf raises"
+  },
+  "side plank": {
+    "gifUrl": "https://static.exercisedb.dev/media/5VXmnV5.gif",
+    "sourceName": "bodyweight incline side plank"
+  },
+  "bicycle crunches": {
+    "gifUrl": "https://static.exercisedb.dev/media/tZkGYZ9.gif",
+    "sourceName": "band bicycle crunch"
+  },
+  "diamond push-ups": {
+    "gifUrl": "https://static.exercisedb.dev/media/soIB2rj.gif",
+    "sourceName": "diamond push-up"
+  },
+  "flutter kicks": {
+    "gifUrl": "https://static.exercisedb.dev/media/UVo2Qs2.gif",
+    "sourceName": "flutter kicks"
+  },
+  "burpee broad jumps": {
+    "gifUrl": "https://static.exercisedb.dev/media/dK9394r.gif",
+    "sourceName": "burpee"
+  },
+  "wall sit": {
+    "gifUrl": "https://static.exercisedb.dev/media/sVQCCeG.gif",
+    "sourceName": "march sit (wall)"
+  },
+  "box step-ups": {
+    "gifUrl": "https://static.exercisedb.dev/media/76vfTdU.gif",
+    "sourceName": "dumbbell step up single leg balance with bicep curl"
+  }
+}

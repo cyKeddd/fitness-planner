@@ -195,19 +195,19 @@ The codebase currently contains some debug `fetch` calls in `Home.tsx` (agent lo
 
 ---
 
-## Skill 9: ExerciseDB Media Integration
+## Skill 9: Exercise Media (Static GIF Mapping)
 
-Exercise guidance media is fetched from ExerciseDB in `server/exerciseMedia.ts` and exposed through `exercises.mediaByName`.
+Exercise demonstration GIFs are served via a static mapping file (`server/exerciseMediaMap.json`). The `exercises.mediaByName` tRPC endpoint reads this file and returns the `gifUrl` for a given exercise name. No runtime API calls, API keys, or external service dependencies are required.
 
-When extending media support:
+GIF assets are hosted on the public ExerciseDB CDN (`https://static.exercisedb.dev/media/...`).
 
-1. Keep ExerciseDB fetch logic server-side only.
-2. Use `mediaByName` from the exercise detail page (`ExerciseDetail.tsx`) for image/video guidance.
-3. Handle missing media gracefully (show fallback UI, no broken embeds).
-4. Configure integration via environment variables:
-   - `EXERCISEDB_API_URL`
-   - `EXERCISEDB_API_HOST`
-   - `EXERCISEDB_API_KEY`
+**When extending media support:**
+
+1. To add media for a new exercise, add an entry to `server/exerciseMediaMap.json` keyed by the normalized name (lowercase, no parentheses, alphanumeric + spaces + hyphens only).
+2. Find the matching ExerciseDB GIF at `https://www.exercisedb.dev/api/v1/exercises/search?q=<name>&limit=5` and copy the `gifUrl`.
+3. The one-time build script is at `scripts/build-exercise-map.mjs` if you need to regenerate the full mapping.
+4. Handle missing media gracefully (show "No image available" fallback, no broken embeds).
+5. Never add runtime API dependencies or API keys for exercise media.
 
 ---
 
